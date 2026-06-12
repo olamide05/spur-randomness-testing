@@ -16,15 +16,15 @@ def runs_test(bitstream):
             runs += 1
 
     # Calculate expected number of runs for a random sequence
-    runs_test_experimental = (n / 2) + 1
+    expected_runs = (n / 2) + 1
 
     # Check if the number of runs is within the expected range (±10% tolerance)
-    lower_bound = runs_test_experimental * 0.9
-    upper_bound = runs_test_experimental * 1.1
+    lower_bound = expected_runs * 0.9
+    upper_bound = expected_runs * 1.1
 
     return {
         "runs": runs,
-        "runs_test_experimental": runs_test_experimental,
+        "expected_runs": expected_runs,
         "lower_bound": lower_bound,
         "upper_bound": upper_bound,
         "is_within_range": lower_bound <= runs <= upper_bound
