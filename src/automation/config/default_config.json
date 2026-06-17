@@ -1,0 +1,6 @@
+{
+    "mode": "standard",
+    "report_format": "json",
+    "input_type": "ascii",
+    "run_all_tests": true
+}
