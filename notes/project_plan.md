@@ -1,89 +1,178 @@
+# Main Goal
 
-## Main Goal
+Develop an automated framework for evaluating and comparing pseudo-random number generators (PRNGs) using the official NIST Statistical Test Suite (STS), while understanding how finite precision, computer arithmetic, and FPGA implementations affect randomness.
 
-Learn how to properly evaluate and compare pseudo-random number generators (PRNGs) using statistical testing, while also understanding how finite precision, computer arithmetic, and FPGA implementations can affect randomness.
+---
 
+# First Stage – Learning the Fundamentals
 
-## First Stage – Learning the Fundamentals
-
-I want to build a strong understanding of:
+Build a strong understanding of:
 
 * PRNGs and randomness
 * XOR-based generators
-* Basic chaos theory and logistic maps
+* Chaos theory and logistic maps
 * Finite precision and rounding errors
 * NIST SP 800-22 statistical tests
 * How randomness is evaluated in research papers
 
-At the same time, I will continue reading relevant papers and keeping notes on important concepts and testing methods.
+At the same time, continue reading relevant papers and maintaining research notes.
 
-## Second Stage – Understanding Statistical Testing
+---
 
-My goal is to become confident in using and interpreting randomness tests.
+# Second Stage – Understanding NIST Statistical Testing
+
+The goal is to become confident in interpreting the NIST tests and their outputs.
 
 This includes:
 
 * Frequency Test
 * Block Frequency Test
 * Runs Test
-* Other NIST tests
-* Understanding p-values and pass rates
+* Rank Test
+* FFT Test
+* Approximate Entropy Test
+* Linear Complexity Test
+* Other NIST SP 800-22 tests
 
-For each test I plan to understand:
+For each test I want to understand:
 
 * What it measures
-* How it works
-* How to interpret the results
+* Why it is important
+* Typical failure modes
+* Interpretation of p-values
+* Interpretation of pass rates
 
+---
 
-## Third Stage – Dataset Analysis
+# Third Stage – NIST STS Automation Framework
 
-Once datasets are available, I will:
+Develop an automated pipeline around the official NIST STS 2.1.2 implementation.
 
-* Apply statistical tests to the data
-* Compare results across different generators
-* Look for bias, patterns, or weaknesses
-* Document observations and findings
+Pipeline:
 
-The aim is to understand which generators perform well and which may have issues.
+MATLAB / Simulink Output
+↓
+Input Conversion
+↓
+NIST STS Execution
+↓
+Result Parsing
+↓
+JSON / PDF Report
 
-## Fourth Stage – Finite Precision and Hardware Effects
+Inputs:
 
-Based on the papers I have been reading, I am interested in exploring how:
+* MATLAB workspace variables
+* ASCII files containing binary sequences
+* Future FPGA datasets
+
+Features:
+
+* Standard parameter configuration
+* Custom parameter configuration
+* Automated execution
+* Automated report generation
+
+---
+
+# Fourth Stage – Dataset Analysis
+
+Once datasets are available:
+
+* Run NIST STS tests
+* Compare multiple generators
+* Analyse pass rates and p-values
+* Identify patterns, weaknesses, or biases
+* Document observations
+
+Potential datasets:
+
+* Logistic map generators
+* XORShift generators
+* FPGA-generated sequences
+* Future QRNG datasets
+
+---
+
+# Fifth Stage – Finite Precision and Hardware Effects
+
+Investigate how:
 
 * Finite precision
 * Rounding errors
-* Computer arithmetic
-* Hardware implementation
+* Floating-point arithmetic
+* FPGA implementations
 
-can affect randomness and chaotic systems.
+affect the statistical properties of generated sequences.
 
-## Fifth Stage – Documentation and Reporting
+---
 
-Throughout the project I will:
+# Sixth Stage – Documentation and Reporting
 
-* Maintain a GitHub repository
-* Keep research notes
-* Document experiments and results
-* Create comparison tables for papers and generators
-* Record weekly progress
+Throughout the project:
 
-## Progress So Far
+* Maintain GitHub repository
+* Maintain project architecture notes
+* Maintain paper review notes
+* Document experiments
+* Track weekly progress
+* Generate final reports
+
+---
+
+# Progress So Far
 
 Completed:
 
 * Read several project-related papers
-* Implemented an XORShift generator
-* Performed basic frequency analysis
-* Started studying NIST SP 800-22
-* Set up a GitHub repository for the project
+* Implemented XORShift generator
+* Studied Frequency Test and Runs Test
+* Learned NIST SP 800-22 fundamentals
+* Created project repository structure
+* Built input conversion pipeline
+* Built configuration management system
+* Downloaded official NIST STS 2.1.2
+* Compiled official NIST STS successfully using WSL
+* Successfully executed STS and tested file input workflow
 
 Current Focus:
 
-* Understanding NIST testing in more detail
-* Building a literature review and paper comparison table
-* Preparing for analysis of project datasets
+* Understanding complete STS execution workflow
+* Designing automation architecture
+* Creating NIST execution wrapper
+* Designing result parsing system
 
-Next Step:
+Next Steps:
 
-* Continue studying statistical testing and begin analysing datasets provided by the research group.
+* Run STS successfully on valid datasets
+* Document all STS execution parameters
+* Implement nist_runner.py
+* Parse STS output automatically
+* Generate JSON reports
+
+---
+
+# STS Execution Requirements
+
+The official STS workflow requires:
+
+1. Stream Length
+2. Input Source
+3. Test Selection
+4. Test Parameters
+5. Number of Bitstreams
+6. Input Format (ASCII or Binary)
+
+---
+
+# Current Architecture
+
+Input Converter
+↓
+Config Manager
+↓
+NIST Runner
+↓
+Result Parser
+↓
+Report Generator
