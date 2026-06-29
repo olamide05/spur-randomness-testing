@@ -7,4 +7,6 @@ results/
 datasets/raw/
 datasets/processed/
 
+sts/sts-2.1.2/experiments
+
 .vscode/
