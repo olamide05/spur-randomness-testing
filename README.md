@@ -1,158 +1,170 @@
-# Hamilton Institute SPUR 2026
+# Randomness Testing Framework
 
-## Statistical Evaluation of XOR-Based Pseudo-Random Number Generators
-
-> Research repository documenting the investigation of XOR-based pseudo-random number generators (PRNGs), statistical randomness testing, and lightweight cryptographic applications.
+> Automated framework for evaluating random number generators using the official NIST Statistical Test Suite (STS).
 
 ---
 
-## About the Project
+## Overview
 
-This repository contains the research, experiments, notes, and implementations developed during my participation in the **Hamilton Institute SPUR 2026 Research Programme**.
+This project is part of my SPUR (Summer Programme for Undergraduate Research) at Maynooth University.
 
-The project focuses on understanding how simple logical and arithmetic operations can generate complex and seemingly random behaviour. The primary objective is to evaluate the statistical quality of XOR-based pseudo-random number generators and determine their suitability for cryptographic and lightweight security applications.
+The objective is to build an automation framework around the official NIST Statistical Test Suite (STS 2.1.2) for evaluating pseudo-random number generators (PRNGs), chaotic random number generators, MATLAB simulations, and FPGA-generated bitstreams.
 
-The research combines concepts from:
-
-* Statistical Analysis
-* Cryptography
-* Computer Arithmetic
-* Boolean Logic
-* Chaos and Dynamical Systems
-* FPGA-Based Computing
-* Lightweight Security Systems
+Instead of manually running the NIST suite, this framework automates the entire workflow from input validation to report generation.
 
 ---
 
-## Research Questions
+# Features
 
-This project investigates questions such as:
+## Current
 
-* Can simple XOR-based systems generate statistically random behaviour?
-* How can randomness be measured objectively?
-* What causes dynamical degradation in pseudo-random systems?
-* How do finite precision and computer arithmetic affect randomness?
-* What statistical properties make a generator suitable for security applications?
+- Official NIST STS integration
+- Automatic input validation
+- Automatic bitstream processing
+- Automatic stream calculation
+- Windows → WSL execution
+- STS automation pipeline
+- Modular project architecture
 
----
+## In Progress
 
-## Methodology
+- Result parser
+- JSON report generation
+- MATLAB integration
+- Configurable STS parameters
 
-The research follows a test-driven evaluation process:
+## Planned
 
-### 1. Generator Implementation
-
-* XORShift generators
-* Additional PRNG architectures
-* FPGA-generated data sets
-
-### 2. Statistical Testing
-
-* NIST SP 800-22
-* Frequency Test
-* Block Frequency Test
-* Runs Test
-* Additional NIST tests
-* Diehard Test Suite
-* Dieharder Test Suite
-
-### 3. Analysis
-
-* Statistical comparison
-* Bias detection
-* Pattern analysis
-* Entropy evaluation
-* Dynamical degradation investigation
-
-### 4. Documentation
-
-* Experiment reports
-* Research notes
-* Literature reviews
-* Weekly progress updates
+- PDF reports
+- Batch testing
+- FPGA dataset analysis
+- MATLAB workspace support
+- Statistical visualisations
+- Hardware randomness evaluation
 
 ---
 
-## Repository Structure
+# Architecture
 
-```text
-.
-├── docs/
-├── experiments/
-├── notes/
-├── papers/
-├── results/
-├── src/
-└── README.md
+```
+           MATLAB
+              │
+              │
+      ASCII Bitstream
+              │
+              ▼
+     Input Validation
+              │
+              ▼
+   Stream Calculations
+              │
+              ▼
+  Windows → WSL Adapter
+              │
+              ▼
+ Official NIST STS 2.1.2
+              │
+              ▼
+      Result Parser
+              │
+              ▼
+      JSON / PDF Report
 ```
 
-### docs/
+---
 
-Project plans, meeting notes, and progress tracking.
+# Project Structure
 
-### experiments/
-
-Individual experiment implementations and evaluations.
-
-### notes/
-
-Research notes, concepts, and learning logs.
-
-### papers/
-
-Paper summaries and literature review notes.
-
-### results/
-
-Generated datasets, statistical outputs, and experiment results.
-
-### src/
-
-Reusable code for generators and testing utilities.
+```
+.
+├── archive/
+├── datasets/
+│   ├── comparison/
+│   ├── fpga/
+│   ├── generated/
+│   └── test_cases/
+├── docs/
+├── experiments/
+├── matlab/
+├── notes/
+├── results/
+├── src/
+│   ├── automation/
+│   ├── generators/
+│   └── tests/
+└── sts/
+```
 
 ---
 
-## Current Progress
+# Technologies
 
-### Completed
+- Python
+- C
+- MATLAB
+- WSL (Ubuntu)
+- Git
 
-* Initial literature review
-* XORShift implementation
-* Seed analysis experiments
-* Frequency analysis experiments
-* NIST SP 800-22 study (ongoing)
+Future Technologies
 
-### In Progress
-
-* Frequency Test implementation
-* Runs Test study
-* Statistical documentation framework
-
-### Upcoming
-
-* Full NIST test implementation
-* Diehard and Dieharder testing
-* FPGA data analysis
-* Comparative evaluation of PRNG designs
+- Verilog
+- VHDL
+- FPGA
+- Simulink
 
 ---
 
-## Technologies
+# Development Roadmap
 
-* Python
-* MATLAB (planned)
-* Git/GitHub
-* NIST Statistical Test Suite
-* FPGA Toolchains (project dependent)
+## Phase 1
+
+- Repository architecture
+- Literature review
+- NIST STS setup
+- Initial automation
+
+## Phase 2
+
+- Automated execution
+- Result parser
+- JSON reports
+
+## Phase 3
+
+- MATLAB integration
+- Configurable testing
+- Batch processing
+
+## Phase 4
+
+- FPGA support
+- Verilog/VHDL integration
+- Comparative randomness analysis
+
+## Phase 5
+
+- Research experiments
+- Performance benchmarking
+- Publication-quality reporting
 
 ---
 
-## Research Log
+# Current Status
 
-This repository is maintained as a research notebook. Experiments, observations, and conclusions are documented as the project progresses.
+Current Version
+
+**v0.1.0**
+
+Current Focus
+
+- Complete result parser
+- Generate JSON reports
+- MATLAB integration
+- Demonstrate end-to-end automated testing
 
 ---
 
-## Acknowledgements
+# References
 
-Research conducted through the Hamilton Institute SPUR 2026 Programme under the supervision of Dr. Erivelton Nepomuceno and Arthur.
+- NIST SP 800-22 Rev.1a
+- NIST Statistical Test Suite (STS) 2.1.2
