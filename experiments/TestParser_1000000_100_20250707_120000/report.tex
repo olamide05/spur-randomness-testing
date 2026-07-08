@@ -1,0 +1,34 @@
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\definecolor{passgreen}{RGB}{0,128,0}
+\definecolor{failred}{RGB}{200,0,0}
+
+\begin{document}
+
+\section*{NIST STS Test Results}
+\textbf{Generator:} MyRNG \\
+\textbf{Stream Length:} 100 bits \\
+\textbf{Number of Streams:} 20250707 \\
+
+\textbf{\textcolor{passgreen}{Overall Result: PASS}}
+
+\begin{longtable}{llcc}
+\toprule
+\textbf{Test} & \textbf{Passed} & \textbf{P-value} & \textbf{Proportion} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Test} & \textbf{Passed} & \textbf{P-value} & \textbf{Proportion} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+Frequency & \textcolor{passgreen}{\textbf{Yes}} & 0.437274 & 1.0000 \\
+Block Frequency & \textcolor{passgreen}{\textbf{Yes}} & 0.534146 & 0.9900 \\
+
+\end{longtable}
+
+\end{document}

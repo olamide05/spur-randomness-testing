@@ -1,25 +1,33 @@
-def load_bitstream(filepath):
-    with open(filepath, 'r', encoding='utf-8') as f:
-        bitstream = f.read()
-        
-    return bitstream
-def clean_bitstream(bitstream):
-    # Remove any non-binary characters (if necessary)
-    cleaned_bitstream = bitstream.replace('\n', '').replace(' ', '').replace('\t', '')  # Remove newlines, spaces, and tabs
-    return cleaned_bitstream
+from pathlib import Path
+from typing import Union, Iterator
 
-def validate_bitstream(bitstream):
-    # Check if the bitstream contains only '0' and '1'
-    if all(char in '01' for char in bitstream):
-        return True
-    else:
-        raise ValueError("Bitstream contains invalid characters. Only '0' and '1' are allowed.")
-def load_and_process_bitstream(filepath):
-    bitstream = load_bitstream(filepath)
-    if not bitstream:
-        raise ValueError("Bitstream is empty.")
-    cleaned_bitstream = clean_bitstream(bitstream)
-    if validate_bitstream(cleaned_bitstream):
-        return cleaned_bitstream
-    else:        raise ValueError("Invalid bitstream after cleaning.")
-# print(load_and_process_bitstream('sample_bitstream.txt'))
+
+class BitstreamLoader:
+    @staticmethod
+    def load_binary(file_path: Path) -> bytes:
+        with open(file_path, 'rb') as f:
+            return f.read()
+
+    @staticmethod
+    def load_ascii(file_path: Path) -> str:
+        with open(file_path, 'r', encoding='ascii') as f:
+            content = f.read()
+        return ''.join(c for c in content if c in '01')
+
+    @staticmethod
+    def bits_from_bytes(data: bytes) -> Iterator[int]:
+        for byte in data:
+            for i in range(7, -1, -1):
+                yield (byte >> i) & 1
+
+    @staticmethod
+    def load(file_path: Path, input_mode: int = 0) -> Union[bytes, str]:
+        if input_mode == 0:
+            return BitstreamLoader.load_binary(file_path)
+        return BitstreamLoader.load_ascii(file_path)
+
+    @staticmethod
+    def get_bit_count(file_path: Path, input_mode: int = 0) -> int:
+        if input_mode == 0:
+            return file_path.stat().st_size * 8
+        return len(BitstreamLoader.load_ascii(file_path))

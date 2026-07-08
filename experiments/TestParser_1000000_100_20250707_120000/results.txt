@@ -1,0 +1,8 @@
+Frequency
+1
+1
+0
+BlockFrequency
+1
+0
+1

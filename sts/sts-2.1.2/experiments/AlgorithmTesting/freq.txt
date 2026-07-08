@@ -1,6 +1,7 @@
 ________________________________________________________________________________
 
-		FILE = /mnt/c/Users/alimi/OneDrive/Desktop/spur-randomness-testing/spur-randomness-testing/datasets/test_cases/test_bits.txt		ALPHA = 0.0100
+		FILE = /mnt/c//Users//alimi//OneDrive//Desktop//spur-randomness-testing//spur-randomness-testing//datasets//test_cases//test_bits.txt		ALPHA = 0.0100
 ________________________________________________________________________________
 
+		BITSREAD = 1000 0s = 500 1s = 500
 		BITSREAD = 1000 0s = 500 1s = 500
