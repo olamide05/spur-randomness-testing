@@ -1,3 +1,4 @@
-"`Automation module.`"
-from .nist_runner import NISTRunner, RunResult
-from .loader import BitstreamLoader
+def __init__(self, config: STSConfig):
+    self.config = config
+    self._validate_config()
+    

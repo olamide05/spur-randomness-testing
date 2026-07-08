@@ -1,0 +1,29 @@
+{
+  "framework": "NIST STS 2.1.2",
+  "experiment_directory": "experiments\\V1Verify_1000000_100_20250708_120000",
+  "generator": "TestRNG",
+  "stream_length": 100,
+  "number_of_streams": 20250708,
+  "overall_passed": true,
+  "tests": [
+    {
+      "name": "frequency",
+      "passed": true,
+      "p_value": 0.437274,
+      "proportion": 1.0,
+      "p_values": [
+        0.437274,
+        0.123456
+      ],
+      "mean_p_value": 0.280365,
+      "min_p_value": 0.123456,
+      "max_p_value": 0.437274,
+      "notes": ""
+    }
+  ],
+  "raw": {
+    "final_report": "generator is TestRNG\n\nC1 C2 C3 C4 C5 C6 C7 C8 C9 C10 P-VALUE PROPORTION STATISTICAL TEST\n 7  8 12 10  8 13  7 11  9  5 0.437274    100/100    Frequency\n",
+    "stats": "Frequency\n0.437274\n0.123456\n",
+    "results": "Frequency\n1\n1\n0\n"
+  }
+}
