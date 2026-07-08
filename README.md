@@ -1,170 +1,205 @@
-# Randomness Testing Framework
+# SPUR Randomness Testing Framework
 
-> Automated framework for evaluating random number generators using the official NIST Statistical Test Suite (STS).
+A modular research framework for evaluating the statistical quality of random number generators using the **NIST SP 800-22 Statistical Test Suite (STS)**.
+
+Developed as part of the **SPUR (Summer Programme for Undergraduate Research)** at **Maynooth University**.
 
 ---
 
 ## Overview
 
-This project is part of my SPUR (Summer Programme for Undergraduate Research) at Maynooth University.
+Random number generators (RNGs) are fundamental to cryptography, simulations, hardware design, embedded systems, and scientific computing. This project provides an automated framework for executing the NIST Statistical Test Suite, collecting results, and exporting them into structured formats for further analysis.
 
-The objective is to build an automation framework around the official NIST Statistical Test Suite (STS 2.1.2) for evaluating pseudo-random number generators (PRNGs), chaotic random number generators, MATLAB simulations, and FPGA-generated bitstreams.
+Rather than interacting with the STS command-line interface manually, this framework automates the complete workflow:
 
-Instead of manually running the NIST suite, this framework automates the entire workflow from input validation to report generation.
+```
+Bitstream
+    │
+    ▼
+Configuration
+    │
+    ▼
+NIST STS Runner
+    │
+    ▼
+NIST SP 800-22
+    │
+    ▼
+Result Parser
+    │
+    ▼
+JSON / CSV / LaTeX Reports
+```
 
 ---
 
 # Features
 
-## Current
-
-- Official NIST STS integration
-- Automatic input validation
-- Automatic bitstream processing
-- Automatic stream calculation
-- Windows → WSL execution
-- STS automation pipeline
-- Modular project architecture
-
-## In Progress
-
-- Result parser
+- Automated execution of NIST SP 800-22
+- Configurable experiment settings
+- Automatic Windows → WSL support
+- Automatic stream validation
+- Result parsing
 - JSON report generation
-- MATLAB integration
-- Configurable STS parameters
-
-## Planned
-
-- PDF reports
-- Batch testing
-- FPGA dataset analysis
-- MATLAB workspace support
-- Statistical visualisations
-- Hardware randomness evaluation
-
----
-
-# Architecture
-
-```
-           MATLAB
-              │
-              │
-      ASCII Bitstream
-              │
-              ▼
-     Input Validation
-              │
-              ▼
-   Stream Calculations
-              │
-              ▼
-  Windows → WSL Adapter
-              │
-              ▼
- Official NIST STS 2.1.2
-              │
-              ▼
-      Result Parser
-              │
-              ▼
-      JSON / PDF Report
-```
+- Modular architecture
+- Ready for FPGA-generated bitstreams
+- Extensible export system
 
 ---
 
 # Project Structure
 
 ```
-.
-├── archive/
+spur-randomness-testing/
+
 ├── datasets/
 │   ├── comparison/
-│   ├── fpga/
 │   ├── generated/
+│   ├── fpga/
 │   └── test_cases/
-├── docs/
-├── experiments/
-├── matlab/
-├── notes/
-├── results/
+│
 ├── src/
 │   ├── automation/
+│   │   ├── loader.py
+│   │   ├── nist_runner.py
+│   │   ├── matlab_runner.py
+│   │   └── result_parser.py
+│   │
+│   ├── config/
+│   │   └── sts_config.py
+│   │
 │   ├── generators/
 │   └── tests/
-└── sts/
+│
+├── results/
+├── matlab/
+├── sts/
+│   └── sts-2.1.2/
+│
+└── README.md
 ```
+
+---
+
+# Current Progress
+
+## Completed
+
+- Literature review
+- XORShift implementation
+- Seed analysis experiments
+- Frequency analysis
+- Automated NIST STS execution
+- Windows / WSL integration
+- Bitstream validation
+- Automatic stream calculation
+- Automatic STS prompt generation
+- Result parsing
+- JSON export framework
+
+---
+
+## In Progress
+
+- Configurable STS runner
+- Parameter configuration
+- CSV exporter
+- LaTeX exporter
+- Improved parser
+- Better experiment summaries
+
+---
+
+## Planned
+
+- MATLAB integration
+- FPGA bitstream support
+- Verilog/VHDL workflow
+- Batch experiment execution
+- Statistical comparison tools
+- Interactive dashboard
 
 ---
 
 # Technologies
 
-- Python
-- C
+- Python 3
+- NIST SP 800-22
+- Linux / WSL
 - MATLAB
-- WSL (Ubuntu)
-- Git
-
-Future Technologies
-
-- Verilog
-- VHDL
-- FPGA
-- Simulink
+- JSON
+- CSV
+- LaTeX
 
 ---
 
-# Development Roadmap
+# Example Usage
 
-## Phase 1
+```python
+from config.sts_config import STSConfig
+from automation.nist_runner import NISTRunner
 
-- Repository architecture
-- Literature review
-- NIST STS setup
-- Initial automation
+config = STSConfig(
+    input_file="datasets/test_cases/test_bits.txt",
+    stream_length=1000000,
+    number_of_streams=10,
+)
 
-## Phase 2
+runner = NISTRunner(config)
+result = runner.run()
+```
 
-- Automated execution
-- Result parser
+---
+
+# Output
+
+The framework automatically generates structured experiment outputs including:
+
 - JSON reports
+- CSV summaries *(coming soon)*
+- LaTeX tables *(coming soon)*
 
-## Phase 3
+Example:
 
-- MATLAB integration
-- Configurable testing
-- Batch processing
+```
+results/
 
-## Phase 4
-
-- FPGA support
-- Verilog/VHDL integration
-- Comparative randomness analysis
-
-## Phase 5
-
-- Research experiments
-- Performance benchmarking
-- Publication-quality reporting
+sample_bitstream_results.json
+report.csv
+report.tex
+```
 
 ---
 
-# Current Status
+# Research Goals
 
-Current Version
+This project aims to provide a reusable framework for evaluating the statistical properties of software and hardware random number generators using standardized statistical testing.
 
-**v0.1.0**
-
-Current Focus
-
-- Complete result parser
-- Generate JSON reports
-- MATLAB integration
-- Demonstrate end-to-end automated testing
+Future work includes integrating FPGA-generated bitstreams, MATLAB simulations, and additional statistical test suites.
 
 ---
 
-# References
+# Repository Status
 
-- NIST SP 800-22 Rev.1a
-- NIST Statistical Test Suite (STS) 2.1.2
+🚧 Active Development
+
+Current focus:
+
+- Configurable STS execution
+- Parameter automation
+- Enhanced result parsing
+- Export system
+
+---
+
+# Acknowledgements
+
+- Maynooth University
+- SPUR Programme
+- NIST Statistical Test Suite (SP 800-22)
+
+---
+
+# License
+
+This project is developed for research purposes as part of the SPUR programme.
