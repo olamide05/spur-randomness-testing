@@ -33,6 +33,41 @@ JSON / CSV / LaTeX Reports
 
 ---
 
+# Getting Started (GitHub Codespaces)
+
+This repository is preconfigured for **GitHub Codespaces** / Dev Containers.
+
+1. Click **Code → Create codespace on main** (or on your branch).
+2. Wait for the container to finish provisioning. On first start it automatically:
+   - installs system build tools (`build-essential`, `gcc`, `make`),
+   - installs the Python dependencies from `requirements.txt`,
+   - downloads the NIST STS source if it is missing, then **builds** the
+     `assess` binary from source (`scripts/setup_sts.sh`),
+   - runs `test_framework.py` to verify the setup.
+
+Once the codespace is ready:
+
+```bash
+python test_framework.py   # full framework self-test
+python verify_v1.py        # V1 pipeline verification
+```
+
+## Local setup
+
+The same steps work on any Linux machine with Python 3.11+:
+
+```bash
+sudo apt-get install -y build-essential gcc make
+pip install -r requirements.txt
+bash scripts/setup_sts.sh   # download (if needed) + build NIST STS
+python test_framework.py
+```
+
+The compiled `assess` binary and object files are treated as build
+artifacts (git-ignored); `scripts/setup_sts.sh` regenerates them.
+
+---
+
 # Features
 
 - Automated execution of NIST SP 800-22

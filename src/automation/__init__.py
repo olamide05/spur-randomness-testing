@@ -1,4 +1,2 @@
-def __init__(self, config: STSConfig):
-    self.config = config
-    self._validate_config()
-    
+"""Automation module."""
+from .nist_runner import NISTRunner, RunResult

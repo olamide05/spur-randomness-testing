@@ -1,0 +1,11 @@
+# SPUR Randomness Testing Framework - Python dependencies
+#
+# The core framework (config, NIST STS runner, result parser, and the
+# JSON/CSV/LaTeX exporters) relies only on the Python standard library,
+# so there are no hard runtime dependencies.
+#
+# The packages below are used for testing and for the numerical/plotting
+# helpers referenced in the research roadmap.
+
+pytest>=7.4
+numpy>=1.24

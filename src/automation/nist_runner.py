@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from ..config.sts_config import STSConfig
 from ..utils.validation import validate_input_file, calculate_num_streams, ValidationResult
-from ..utils.path_utils import ensure_directory, get_sts_result_files
+from ..utils.path_utils import ensure_directory
 
 
 @dataclass
@@ -128,7 +128,42 @@ class NISTRunner:
         except Exception as e:
             return RunResult(exp_dir, "", str(e), -1, False)
 
+    def get_algorithm_testing_dir(self) -> Path:
+        """Directory where NIST STS writes its output when reading from a file."""
+        return self.config.sts_path / "experiments" / "AlgorithmTesting"
+
     def _copy_results(self, exp_dir: Path) -> None:
-        for name, src in get_sts_result_files(self.config.sts_path).items():
-            if src.exists():
-                shutil.copy2(src, exp_dir / src.name)
+        algo_dir = self.get_algorithm_testing_dir()
+        if not algo_dir.exists():
+            return
+
+        # 1. The authoritative summary report.
+        final_report = algo_dir / "finalAnalysisReport.txt"
+        if final_report.exists():
+            shutil.copy2(final_report, exp_dir / final_report.name)
+
+        # 2. STS stores per-test data in AlgorithmTesting/<TestName>/. Aggregate
+        #    each test's p-values (results.txt) into a single stats.txt using the
+        #    "TestName\n<p-value>\n..." layout the ResultParser expects, and keep
+        #    the verbose per-test stats under stats/<TestName>.txt for reference.
+        stats_lines: list[str] = []
+        for test_dir in sorted(p for p in algo_dir.iterdir() if p.is_dir()):
+            per_test_results = test_dir / "results.txt"
+            if per_test_results.exists():
+                p_values = [
+                    ln.strip()
+                    for ln in per_test_results.read_text(errors="ignore").splitlines()
+                    if ln.strip()
+                ]
+                if p_values:
+                    stats_lines.append(test_dir.name)
+                    stats_lines.extend(p_values)
+
+            per_test_stats = test_dir / "stats.txt"
+            if per_test_stats.exists():
+                dest_dir = exp_dir / "stats"
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(per_test_stats, dest_dir / f"{test_dir.name}.txt")
+
+        if stats_lines:
+            (exp_dir / "stats.txt").write_text("\n".join(stats_lines) + "\n")

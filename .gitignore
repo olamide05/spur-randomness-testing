@@ -7,6 +7,12 @@ results/
 datasets/raw/
 datasets/processed/
 
-sts/sts-2.1.2/experiments
+# NIST STS runtime output (regenerated on every run)
+sts/sts-2.1.2/experiments/AlgorithmTesting/finalAnalysisReport.txt
+sts/sts-2.1.2/experiments/AlgorithmTesting/freq.txt
+
+# NIST STS build artifacts (built from source by scripts/setup_sts.sh)
+sts/sts-2.1.2/assess
+sts/sts-2.1.2/obj/*.o
 
 .vscode/
