@@ -1,7 +1,0 @@
-RESULTS FOR THE UNIFORMITY OF P-VALUES AND THE PROPORTION OF PASSING SEQUENCES
--------------------------------------------------------------------------------
-generator is MyRNG
-
-C1  C2  C3  C4  C5  C6  C7  C8  C9 C10  P-VALUE  PROPORTION  STATISTICAL TEST
-  7   8  12  10   8  13   7  11   9   5  0.437274     100/100     Frequency
-  6   9  11  10   9  12   8  10   9   6  0.534146      99/100     BlockFrequency

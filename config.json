@@ -1,0 +1,27 @@
+{
+  "sts_path": "sts/sts-2.1.2",
+  "input_file": "sts/sts-2.1.2/data/BBS.dat",
+  "generator": "Pi",
+  "stream_length": 100000,
+  "number_of_streams": 10,
+  "run_all_tests": true,
+  "selected_tests": [],
+  "experiments_directory": "experiments",
+  "tests": {
+    "frequency": { "enabled": true },
+    "block_frequency": { "enabled": true, "block_length": 128 },
+    "cumulative_sums": { "enabled": true },
+    "runs": { "enabled": true },
+    "longest_run": { "enabled": true },
+    "rank": { "enabled": true },
+    "fft": { "enabled": true },
+    "non_overlapping_template": { "enabled": true, "template_length": 9, "num_templates": 148 },
+    "overlapping_template": { "enabled": true, "template_length": 9 },
+    "universal": { "enabled": true },
+    "approximate_entropy": { "enabled": true, "block_length": 10 },
+    "random_excursions": { "enabled": true },
+    "random_excursions_variant": { "enabled": true },
+    "serial": { "enabled": true, "block_length": 16 },
+    "linear_complexity": { "enabled": true, "block_length": 500 }
+  }
+}

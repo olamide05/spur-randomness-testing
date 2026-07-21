@@ -16,14 +16,15 @@ print("=" * 60)
 print("\n[1/5] Testing STSConfig...")
 config = STSConfig(
     sts_path=Path("sts/sts-2.1.2"),
-    input_file=Path("datasets/test_cases/test_bits.txt"),
-    generator="MyRNG",
+    input_file=Path("/workspaces/fs/sts/sts-2.1.2/data/data.pi"),
+    generator="MyRNG2",
     stream_length=1_000_000,
     number_of_streams=100,
-    test_parameters={
-        "block_frequency": {"block_length": 128},
-        "approximate_entropy": {"block_length": 10},
-    }
+    #  test_parameters={
+    #      "block_frequency": {"block_length": 128},
+    #     "approximate_entropy": {"block_length": 10},
+    #     ""
+    # }
 )
 print(f"   OK: {config.generator}")
 

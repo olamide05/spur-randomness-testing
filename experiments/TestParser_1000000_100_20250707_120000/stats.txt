@@ -1,6 +1,0 @@
-Frequency
-0.437274
-0.123456
-BlockFrequency
-0.534146
-0.234567

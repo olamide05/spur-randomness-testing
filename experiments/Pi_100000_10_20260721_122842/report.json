@@ -1,0 +1,178 @@
+{
+  "framework": "NIST STS 2.1.2",
+  "generator": "Pi",
+  "overall_passed": false,
+  "metadata": {
+    "total_tests": 15,
+    "tests_passed": 12,
+    "tests_failed": 1,
+    "tests_not_run": 2
+  },
+  "tests": [
+    {
+      "name": "frequency",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "blockfrequency",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "cumulativesums",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "runs",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "longestrun",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "rank",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "fft",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "overlappingtemplate",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "universal",
+      "status": "Fail",
+      "p_value": null,
+      "proportion": 0.0,
+      "pass_rate": "0/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": "* FAILED"
+    },
+    {
+      "name": "approximateentropy",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "randomexcursions",
+      "status": "Not Run",
+      "p_value": null,
+      "proportion": null,
+      "pass_rate": "0/0",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "randomexcursionsvariant",
+      "status": "Not Run",
+      "p_value": null,
+      "proportion": null,
+      "pass_rate": "0/0",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "serial",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "linearcomplexity",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 1.0,
+      "pass_rate": "9/9",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    },
+    {
+      "name": "non_overlapping_template",
+      "status": "Pass",
+      "p_value": null,
+      "proportion": 0.9932432432432432,
+      "pass_rate": "1323/1332",
+      "mean_p_value": null,
+      "min_p_value": null,
+      "max_p_value": null,
+      "notes": ""
+    }
+  ]
+}

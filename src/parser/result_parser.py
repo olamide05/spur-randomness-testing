@@ -1,316 +1,209 @@
-"""Result Parser module - handles REAL NIST STS output properly."""
+"""Result Parser."""
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import List, Optional, Dict
 from statistics import mean
 
 
 @dataclass
 class TestResult:
     name: str
-    status: str = "unknown"
-    passed: Optional[bool] = None
-    p_value: Optional[float] = None
-    proportion: Optional[float] = None
-    pass_rate: str = ""
-    p_values: List[float] = field(default_factory=list)
+    status: str
+    p_value: Optional[float]
+    proportion: Optional[float]
+    pass_rate: str
+    mean_p_value: Optional[float]
+    min_p_value: Optional[float]
+    max_p_value: Optional[float]
     notes: str = ""
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "name": self.name,
-            "status": self.status,
-            "passed": self.passed,
-            "p_value": self.p_value,
-            "proportion": self.proportion,
-            "pass_rate": self.pass_rate,
-            "p_values": self.p_values,
-            "mean_p_value": mean(self.p_values) if self.p_values else None,
-            "min_p_value": min(self.p_values) if self.p_values else None,
-            "max_p_value": max(self.p_values) if self.p_values else None,
-            "notes": self.notes,
-        }
 
 
 @dataclass
 class ExperimentSummary:
-    experiment_directory: str
-    generator: str = ""
-    stream_length: int = 0
-    number_of_streams: int = 0
-    tests: List[TestResult] = field(default_factory=list)
-    overall_passed: Optional[bool] = None
-    raw_final_report: str = ""
-    raw_stats: str = ""
-    raw_results: str = ""
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "framework": "NIST STS 2.1.2",
-            "experiment_directory": self.experiment_directory,
-            "generator": self.generator,
-            "stream_length": self.stream_length,
-            "number_of_streams": self.number_of_streams,
-            "overall_passed": self.overall_passed,
-            "tests": [t.to_dict() for t in self.tests],
-        }
+    generator: str
+    framework: str
+    tests: List[TestResult]
+    overall_passed: bool
+    experiment_directory: Path
 
 
 class ResultParser:
-    TEST_NAME_MAP = {
-        "Frequency": "frequency",
-        "BlockFrequency": "block_frequency",
-        "CumulativeSums": "cumulative_sums",
-        "Runs": "runs",
-        "LongestRun": "longest_run",
-        "Rank": "rank",
-        "FFT": "fft",
-        "NonOverlappingTemplate": "non_overlapping_template",
-        "OverlappingTemplate": "overlapping_template",
-        "Universal": "universal",
-        "ApproximateEntropy": "approximate_entropy",
-        "RandomExcursions": "random_excursions",
-        "RandomExcursionsVariant": "random_excursions_variant",
-        "Serial": "serial",
-        "LinearComplexity": "linear_complexity",
-    }
-
     def __init__(self, experiment_directory: Path, generator: str = ""):
         self.experiment_directory = Path(experiment_directory)
-        if not self.experiment_directory.exists():
-            raise FileNotFoundError(f"Not found: {experiment_directory}")
         self.generator = generator
+        self.framework = "NIST STS 2.1.2"
 
     def parse(self) -> ExperimentSummary:
-        summary = ExperimentSummary(
-            experiment_directory=str(self.experiment_directory),
-            generator=self.generator
+        report = self._read_file("finalAnalysisReport.txt")
+        stats = self._parse_stats()
+        results = self._parse_results()
+        tests = self._parse_report(report, stats, results)
+        overall = all(t.status == "Pass" for t in tests) if tests else False
+        return ExperimentSummary(
+            generator=self.generator,
+            framework=self.framework,
+            tests=tests,
+            overall_passed=overall,
+            experiment_directory=self.experiment_directory,
         )
-        
-        summary.raw_final_report = self._read("finalAnalysisReport.txt")
-        summary.raw_stats = self._read("stats.txt")
-        summary.raw_results = self._read("results.txt")
-        
-        stats_data = self.parse_stats()
-        results_data = self.parse_results()
-        report_data = self.parse_final_report()
-        
-        return self.merge(summary, report_data, stats_data, results_data)
 
-    def _read(self, filename: str) -> str:
+    def _read_file(self, filename: str) -> str:
         path = self.experiment_directory / filename
-        if not path.exists():
-            return ""
-        try:
-            with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-                return f.read()
-        except (IOError, OSError):
-            return ""
+        return path.read_text() if path.exists() else ""
 
-    def parse_stats(self) -> Dict[str, List[float]]:
-        content = self._read("stats.txt")
-        if not content:
-            return {}
-
+    def _parse_stats(self) -> Dict[str, List[float]]:
+        text = self._read_file("stats.txt")
         data = {}
-        current_test = None
-        
-        for line in content.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            
-            if line in self.TEST_NAME_MAP:
-                current_test = line
-                data[current_test] = []
-            elif current_test and self._is_p_value(line):
-                data[current_test].append(float(line))
-        
-        return data
-
-    def parse_results(self) -> Dict[str, List[bool]]:
-        content = self._read("results.txt")
-        if not content:
-            return {}
-
-        data = {}
-        current_test = None
-        
-        for line in content.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            
-            if line in self.TEST_NAME_MAP:
-                current_test = line
-                data[current_test] = []
-            elif current_test and line in ("0", "1"):
-                data[current_test].append(line == "1")
-        
-        return data
-
-    def parse_final_report(self) -> Dict[str, Any]:
-        content = self._read("finalAnalysisReport.txt")
-        if not content:
-            return {}
-
-        data = {"tests": []}
-        
-        lines = content.splitlines()
-        in_table = False
-        
-        test_aggregates = {}
-        
-        for line in lines:
-            if "P-VALUE" in line and "STATISTICAL TEST" in line:
-                in_table = True
-                continue
-            if in_table and line.strip() and not line.startswith("-"):
-                test = self._parse_report_line(line)
-                if test:
-                    name = test["name"]
-                    if name not in test_aggregates:
-                        test_aggregates[name] = {
-                            "name": name,
-                            "raw_name": test["raw_name"],
-                            "p_value": test.get("p_value"),
-                            "passed_count": 0,
-                            "total_count": 0,
-                            "starred": False,
-                        }
-                    tc = test_aggregates[name]
-                    tc["passed_count"] += int(test["proportion"] * test.get("total_count", 0))
-                    tc["total_count"] += test.get("total_count", 0)
-                    if test.get("starred"):
-                        tc["starred"] = True
-        
-        for name, agg in test_aggregates.items():
-            total = agg["total_count"]
-            passed = agg["passed_count"]
-            proportion = passed / total if total > 0 else 0
-            
-            if total == 0:
-                status = "Not Run"
-                passed_flag = None
-            elif proportion >= 0.96:
-                status = "Pass"
-                passed_flag = True
-            else:
-                status = "Fail"
-                passed_flag = False
-            
-            data["tests"].append({
-                "name": name,
-                "status": status,
-                "p_value": agg["p_value"],
-                "proportion": proportion,
-                "passed": passed_flag,
-                "pass_rate": f"{passed}/{total}",
-                "raw_name": agg["raw_name"],
-                "starred": agg["starred"],
-            })
-        
-        return data
-
-    def _parse_report_line(self, line: str) -> Optional[Dict[str, Any]]:
-        line = line.strip()
-        if not line:
-            return None
-
-        prop_match = re.search(r'(\d+)/(\d+)\s+([*\s]*)\s*(\S+)$', line)
-        if not prop_match:
-            return None
-
-        passed_count = int(prop_match.group(1))
-        total_count = int(prop_match.group(2))
-        star = prop_match.group(3).strip()
-        test_name = prop_match.group(4).strip()
-
-        if test_name not in self.TEST_NAME_MAP:
-            for full_name in self.TEST_NAME_MAP:
-                if full_name.startswith(test_name) or test_name.startswith(full_name[:5]):
-                    test_name = full_name
-                    break
-
-        proportion = passed_count / total_count if total_count > 0 else 0
-
-        p_value = None
-        p_match = re.search(r'([\d.]+|----)\s+\d+/\d+', line)
-        if p_match:
-            p_str = p_match.group(1)
-            if p_str != "----":
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        i = 0
+        while i < len(lines):
+            name = lines[i]
+            i += 1
+            values = []
+            while i < len(lines):
                 try:
-                    p_value = float(p_str)
+                    values.append(float(lines[i]))
+                    i += 1
                 except ValueError:
-                    p_value = None
+                    break
+            if values:
+                data[name] = values
+        return data
 
-        return {
-            "name": self.TEST_NAME_MAP.get(test_name, test_name.lower()),
-            "proportion": proportion,
-            "p_value": p_value,
-            "raw_name": test_name,
-            "starred": bool(star),
-            "total_count": total_count,
-        }
+    def _parse_results(self) -> Dict[str, List[int]]:
+        text = self._read_file("results.txt")
+        data = {}
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        i = 0
+        while i < len(lines):
+            name = lines[i]
+            i += 1
+            values = []
+            while i < len(lines):
+                try:
+                    values.append(int(lines[i]))
+                    i += 1
+                except ValueError:
+                    break
+            if values:
+                data[name] = values
+        return data
 
-    def _is_p_value(self, s: str) -> bool:
-        try:
-            val = float(s)
-            return 0 <= val <= 1
-        except ValueError:
-            return False
-
-    def merge(self, summary: ExperimentSummary, report: Dict, stats: Dict, results: Dict) -> ExperimentSummary:
+    def _parse_report(self, report: str, stats: Dict, results: Dict) -> List[TestResult]:
         tests = []
-        
-        for td in report.get("tests", []):
-            tr = TestResult(
-                name=td.get("name", "unknown"),
-                status=td.get("status", "unknown"),
-                passed=td.get("passed"),
-                p_value=td.get("p_value"),
-                proportion=td.get("proportion"),
-                pass_rate=td.get("pass_rate", ""),
-                notes="* FAILED" if td.get("starred") else "",
-            )
+        aggregated = {}
+        seen = set()
 
-            raw = td.get("raw_name", tr.name)
-            
-            if raw in stats and stats[raw]:
-                tr.p_values = stats[raw]
-                if tr.p_value is None:
-                    tr.p_value = mean(tr.p_values)
-            
-            if raw in results and results[raw]:
-                passes = results[raw]
-                if tr.proportion is None:
-                    tr.proportion = sum(passes) / len(passes)
-                if tr.passed is None:
-                    tr.passed = tr.proportion >= 0.96
-                    tr.status = "Pass" if tr.passed else "Fail"
-                if not tr.pass_rate:
-                    tr.pass_rate = f"{sum(passes)}/{len(passes)}"
+        for line in report.splitlines():
+            parsed = self._parse_line(line)
+            if not parsed:
+                continue
 
-            tests.append(tr)
+            name, pval_str, prop_str, starred = parsed
 
-        summary.tests = tests
-        if tests:
-            run_tests = [t for t in tests if t.status != "Not Run"]
-            if run_tests:
-                summary.overall_passed = all(t.passed for t in run_tests if t.passed is not None)
+            # Skip lines where name is just "*" (malformed)
+            if not name or name == "*":
+                continue
 
-        dir_name = self.experiment_directory.name
-        parts = dir_name.split("_")
-        if len(parts) >= 4:
+            if name == "NonOverlappingTemplate":
+                if name not in aggregated:
+                    aggregated[name] = {"pvals": [], "passed": 0, "total": 0}
+                if pval_str and pval_str not in ("----", "------"):
+                    try:
+                        aggregated[name]["pvals"].append(float(pval_str))
+                    except:
+                        pass
+                if prop_str and "/" in prop_str:
+                    try:
+                        passed, total = map(int, prop_str.split("/"))
+                        aggregated[name]["passed"] += passed
+                        aggregated[name]["total"] += total
+                    except:
+                        pass
+                continue
+
+            if name in seen:
+                continue
+            seen.add(name)
+
+            test = self._create_result(name, pval_str, prop_str, starred, stats, results)
+            tests.append(test)
+
+        if "NonOverlappingTemplate" in aggregated:
+            agg = aggregated["NonOverlappingTemplate"]
+            pval = mean(agg["pvals"]) if agg["pvals"] else None
+            proportion = agg["passed"] / agg["total"] if agg["total"] > 0 else None
+            pass_rate = f"{agg['passed']}/{agg['total']}"
+            status = "Pass" if proportion and proportion >= 0.96 else "Fail" if proportion else "Not Run"
+            pvals = stats.get("NonOverlappingTemplate", [])
+            tests.append(TestResult(
+                name="non_overlapping_template",
+                status=status,
+                p_value=pval,
+                proportion=proportion,
+                pass_rate=pass_rate,
+                mean_p_value=mean(pvals) if pvals else None,
+                min_p_value=min(pvals) if pvals else None,
+                max_p_value=max(pvals) if pvals else None,
+            ))
+
+        return tests
+
+    def _parse_line(self, line: str):
+        # Match NIST report line
+        # The * failure marker appears before the test name
+        pattern = r'^\s*\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+([\d.]+|----|------)\s+([\d/]+|------)\s+(.*)$'
+        match = re.match(pattern, line)
+        if match:
+            rest = match.group(3).strip()
+            # Check if rest starts with * (failure marker)
+            starred = False
+            if rest.startswith("*"):
+                starred = True
+                rest = rest[1:].strip()
+            return (rest, match.group(1), match.group(2), starred)
+        return None
+
+    def _create_result(self, name: str, pval_str: str, prop_str: str, starred: bool,
+                      stats: Dict, results: Dict) -> TestResult:
+        p_value = None
+        if pval_str and pval_str not in ("----", "------"):
             try:
-                for i, part in enumerate(parts):
-                    if part.isdigit() and len(part) >= 4:
-                        summary.stream_length = int(part)
-                        if i + 1 < len(parts) and parts[i + 1].isdigit():
-                            summary.number_of_streams = int(parts[i + 1])
-                        break
-            except (ValueError, IndexError):
+                p_value = float(pval_str)
+            except:
                 pass
 
-        return summary
+        proportion = None
+        pass_rate = prop_str if prop_str not in ("------", "") else "0/0"
+        if "/" in pass_rate:
+            try:
+                passed, total = map(int, pass_rate.split("/"))
+                if total > 0:
+                    proportion = passed / total
+            except:
+                pass
+
+        if pass_rate == "0/0" or prop_str in ("------", ""):
+            status = "Not Run"
+        elif proportion and proportion >= 0.96:
+            status = "Pass"
+        else:
+            status = "Fail"
+
+        notes = "* FAILED" if starred else ""
+
+        stat_values = stats.get(name, [])
+        normalized = name.lower().replace(" ", "_").replace("-", "_")
+
+        return TestResult(
+            name=normalized,
+            status=status,
+            p_value=p_value,
+            proportion=proportion,
+            pass_rate=pass_rate,
+            mean_p_value=mean(stat_values) if stat_values else None,
+            min_p_value=min(stat_values) if stat_values else None,
+            max_p_value=max(stat_values) if stat_values else None,
+            notes=notes,
+        )

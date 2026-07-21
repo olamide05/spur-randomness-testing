@@ -1,0 +1,25 @@
+NIST STS 2.1.2 Test Results
+
+Generator,Pi
+Total Tests,15
+Tests Passed,12
+Tests Failed,1
+Tests Not Run,2
+Overall Result,FAIL
+
+Test Name,Status,P-Value,Proportion,Pass Rate,Mean P-Value,Min P-Value,Max P-Value,Notes
+frequency,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+blockfrequency,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+cumulativesums,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+runs,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+longestrun,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+rank,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+fft,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+overlappingtemplate,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+universal,Fail,N/A,N/A,0/9,N/A,N/A,N/A,* FAILED
+approximateentropy,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+randomexcursions,Not Run,N/A,N/A,0/0,N/A,N/A,N/A,
+randomexcursionsvariant,Not Run,N/A,N/A,0/0,N/A,N/A,N/A,
+serial,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+linearcomplexity,Pass,N/A,1.0000,9/9,N/A,N/A,N/A,
+non_overlapping_template,Pass,N/A,0.9932,1323/1332,N/A,N/A,N/A,

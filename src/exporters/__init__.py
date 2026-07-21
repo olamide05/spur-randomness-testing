@@ -1,4 +1,7 @@
-"""Exporters module."""
-from .json_exporter import JSONExporter, export_json
-from .csv_exporter import CSVExporter, export_csv
-from .latex_exporter import LatexExporter, export_latex
+"""Exporters for NIST STS results."""
+from .json_exporter import export_json
+from .csv_exporter import export_csv
+from .latex_exporter import export_latex
+from .html_exporter import export_html
+
+__all__ = ["export_json", "export_csv", "export_latex", "export_html"]
