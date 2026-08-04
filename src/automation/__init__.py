@@ -1,2 +1,1 @@
-"""Automation module."""
-from .nist_runner import NISTRunner, RunResult
+from .nist_runner import NISTRunner

@@ -1,0 +1,15 @@
+test,status,passed,total,p_value,proportion
+frequency,pass,10,10,0.534146,1.0
+block_frequency,pass,10,10,0.739918,1.0
+cumulative_sums,pass,20,20,0.911413,1.0
+runs,pass,10,10,0.122325,1.0
+longest_run,pass,10,10,0.213309,1.0
+rank,pass,10,10,0.911413,1.0
+fft,pass,10,10,0.739918,1.0
+non_overlapping_template,pass,1467,1480,0.739918,0.9912162162162163
+overlapping_template,fail,9,10,0.066882,0.9
+approximate_entropy,pass,10,10,0.534146,1.0
+random_excursions,pass,16,16,,1.0
+random_excursions_variant,pass,36,36,,1.0
+serial,fail,18,20,0.350485,0.9
+linear_complexity,pass,10,10,0.739918,1.0

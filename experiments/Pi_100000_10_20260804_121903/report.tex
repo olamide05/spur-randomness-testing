@@ -1,0 +1,25 @@
+\documentclass{article}
+\usepackage{booktabs}
+\begin{document}
+\section*{NIST STS Results: Pi}
+\begin{tabular}{lcc}
+\toprule
+Test & Status & Passed \\
+\midrule
+frequency & PASS & 10/10 \\
+block_frequency & PASS & 10/10 \\
+cumulative_sums & PASS & 20/20 \\
+runs & PASS & 10/10 \\
+longest_run & PASS & 10/10 \\
+rank & PASS & 10/10 \\
+fft & PASS & 10/10 \\
+non_overlapping_template & PASS & 1467/1480 \\
+overlapping_template & FAIL & 9/10 \\
+approximate_entropy & PASS & 10/10 \\
+random_excursions & PASS & 16/16 \\
+random_excursions_variant & PASS & 36/36 \\
+serial & FAIL & 18/20 \\
+linear_complexity & PASS & 10/10 \\
+\bottomrule
+\end{tabular}
+\end{document}

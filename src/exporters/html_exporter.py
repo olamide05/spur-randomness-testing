@@ -1,117 +1,77 @@
 """HTML Dashboard exporter."""
 from pathlib import Path
-from typing import Optional
-from datetime import datetime
 
 
-def export_html(summary, output_path: Optional[Path] = None) -> Path:
-    exp_dir = Path(summary.experiment_directory)
-
+def export_html(summary, output_path: Path = None) -> Path:
     if output_path is None:
-        output_path = exp_dir / "dashboard.html"
-
-    total = len(summary.tests)
-    passed = sum(1 for t in summary.tests if t.status == "Pass")
-    failed = sum(1 for t in summary.tests if t.status == "Fail")
-    not_run = sum(1 for t in summary.tests if t.status == "Not Run")
-
-    rows = []
-    for t in summary.tests:
-        pval = f"{t.p_value:.6f}" if t.p_value else "N/A"
-        mean_p = f"{t.mean_p_value:.6f}" if t.mean_p_value else "N/A"
-        color = "#d4edda" if t.status == "Pass" else "#f8d7da" if t.status == "Fail" else "#e2e3e5"
-        badge = "bg-success" if t.status == "Pass" else "bg-danger" if t.status == "Fail" else "bg-secondary"
-        rows.append(f"""
-        <tr style="background-color: {color}">
-            <td><strong>{t.name}</strong></td>
-            <td><span class="badge {badge}">{t.status}</span></td>
-            <td>{t.pass_rate}</td>
-            <td>{pval}</td>
-            <td>{mean_p}</td>
-            <td>{t.notes or ""}</td>
-        </tr>
-        """)
-
-    labels = [t.name for t in summary.tests]
-    pvalues = [t.p_value if t.p_value else 0 for t in summary.tests]
-    statuses = [t.status for t in summary.tests]
-
+        output_path = summary.experiment_directory / "dashboard.html"
+    
+    labels = []
+    passed = []
+    colors = []
+    
+    for test in summary.tests:
+        labels.append(test.name)
+        if test.total > 0:
+            passed.append(test.passed)
+            colors.append("#22c55e" if test.status == "pass" else "#ef4444")
+        else:
+            passed.append(0)
+            colors.append("#9ca3af")
+    
+    rows = ""
+    for test in summary.tests:
+        icon = "✅" if test.status == "pass" else "❌" if test.status == "fail" else "➖"
+        rows += f"<tr><td>{test.name}</td><td>{icon}</td><td>{test.passed}/{test.total}</td></tr>"
+    
     html = f"""<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>NIST STS Results - {summary.generator}</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{ font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f7fa; color: #333; }}
-.container {{ max-width: 1200px; margin: 0 auto; padding: 2rem; }}
-header {{ background: linear-gradient(135deg, #1e3a5f, #2d5a87); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }}
-.grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }}
-.card {{ background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid; }}
-.card.pass {{ border-color: #28a745; }}
-.card.fail {{ border-color: #dc3545; }}
-.card.info {{ border-color: #17a2b8; }}
-.card h3 {{ font-size: 0.875rem; text-transform: uppercase; color: #6c757d; margin-bottom: 0.5rem; }}
-.card .value {{ font-size: 2.5rem; font-weight: 700; color: #1e3a5f; }}
-.overall {{ font-size: 3rem; text-align: center; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }}
-.overall.pass {{ background: #d4edda; color: #155724; }}
-.overall.fail {{ background: #f8d7da; color: #721c24; }}
-table {{ width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-collapse: collapse; }}
-th {{ background: #1e3a5f; color: white; padding: 1rem; text-align: left; }}
-td {{ padding: 1rem; border-bottom: 1px solid #e9ecef; }}
-.badge {{ padding: 0.35em 0.65em; border-radius: 6px; font-size: 0.875rem; font-weight: 600; }}
-.bg-success {{ background: #d4edda; color: #155724; }}
-.bg-danger {{ background: #f8d7da; color: #721c24; }}
-.bg-secondary {{ background: #e2e3e5; color: #383d41; }}
-.chart {{ background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; }}
-.footer {{ text-align: center; color: #6c757d; margin-top: 2rem; font-size: 0.875rem; }}
+body {{ font-family: system-ui, sans-serif; max-width: 1000px; margin: 40px auto; padding: 20px; background: #f5f5f5; }}
+.card {{ background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+h1 {{ margin: 0 0 8px 0; }}
+.status {{ font-size: 24px; font-weight: bold; padding: 12px 24px; border-radius: 8px; display: inline-block; }}
+.status.pass {{ background: #dcfce7; color: #166534; }}
+.status.fail {{ background: #fee2e2; color: #991b1b; }}
+table {{ width: 100%; border-collapse: collapse; margin-top: 16px; }}
+th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }}
+th {{ background: #f9fafb; font-weight: 600; }}
+.chart-container {{ height: 300px; }}
 </style>
 </head>
 <body>
-<div class="container">
-<header>
-<h1>NIST STS 2.1.2 Results</h1>
-<p>Generator: <strong>{summary.generator}</strong> | Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
-</header>
-
-<div class="overall {'pass' if summary.overall_passed else 'fail'}">
-{'PASS' if summary.overall_passed else 'FAIL'}
+<div class="card">
+<h1>NIST STS Results</h1>
+<p>Generator: <strong>{summary.generator}</strong></p>
+<p>Directory: {summary.experiment_directory.name}</p>
+<div class="status {'pass' if summary.overall_status == 'pass' else 'fail'}">{summary.overall_status.upper()}</div>
 </div>
-
-<div class="grid">
-<div class="card info"><h3>Total</h3><div class="value">{total}</div></div>
-<div class="card pass"><h3>Passed</h3><div class="value">{passed}</div></div>
-<div class="card fail"><h3>Failed</h3><div class="value">{failed}</div></div>
-<div class="card info"><h3>Not Run</h3><div class="value">{not_run}</div></div>
+<div class="card">
+<div class="chart-container"><canvas id="chart"></canvas></div>
 </div>
-
-<div class="chart">
-<h2 style="margin-bottom:1rem">P-Values</h2>
-<canvas id="chart" height="80"></canvas>
-</div>
-
-<h2 style="margin-bottom:1rem">Results</h2>
+<div class="card">
 <table>
-<thead><tr><th>Test</th><th>Status</th><th>Pass Rate</th><th>P-Value</th><th>Mean P</th><th>Notes</th></tr></thead>
-<tbody>{''.join(rows)}</tbody>
+<tr><th>Test</th><th>Status</th><th>Passed</th></tr>
+{rows}
 </table>
-
-<div class="footer"><p>SPUR NIST STS Framework</p></div>
 </div>
-
 <script>
-const colors = {str(statuses)}.map(s => s === 'Pass' ? '#28a745' : s === 'Fail' ? '#dc3545' : '#6c757d');
 new Chart(document.getElementById('chart'), {{
-type: 'bar',
-data: {{ labels: {str(labels)}, datasets: [{{ label: 'P-Value', data: {str(pvalues)}, backgroundColor: colors, borderWidth: 0 }}] }},
-options: {{ responsive: true, scales: {{ y: {{ beginAtZero: true, max: 1 }} }}, plugins: {{ legend: {{ display: false }} }} }}
+  type: 'bar',
+  data: {{
+    labels: {labels},
+    datasets: [{{ label: 'Passed', data: {passed}, backgroundColor: {colors} }}]
+  }},
+  options: {{ indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ display: false }} }} }}
 }});
 </script>
 </body>
-</html>
-"""
-
+</html>"""
+    
     with open(output_path, "w") as f:
         f.write(html)
     return output_path

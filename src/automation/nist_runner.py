@@ -1,171 +1,210 @@
-"""NIST STS Runner."""
 import subprocess
 import shutil
-import sys
 from pathlib import Path
-from dataclasses import dataclass
-
-_project_root = Path(__file__).resolve().parent.parent.parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
-
-from src.config.sts_config import STSConfig
-
-
-@dataclass
-class RunResult:
-    experiment_directory: Path
-    stdout: str
-    stderr: str
-    return_code: int
-    success: bool
+from datetime import datetime
 
 
 class NISTRunner:
-    TEST_NAMES = [
-        "Frequency", "BlockFrequency", "CumulativeSums", "Runs",
-        "LongestRun", "Rank", "FFT", "NonOverlappingTemplate",
-        "OverlappingTemplate", "Universal", "ApproximateEntropy",
-        "RandomExcursions", "RandomExcursionsVariant", "Serial", "LinearComplexity"
+    # NIST defaults for each parameter-adjustable test
+    DEFAULTS = {
+        "block_frequency": {"block_length": 128},
+        "non_overlapping_template": {"block_length": 9},
+        "overlapping_template": {"block_length": 9},
+        "approximate_entropy": {"block_length": 10},
+        "serial": {"block_length": 16},
+        "linear_complexity": {"block_length": 500},
+    }
+
+    # Test order for the 15 NIST tests (1-15)
+    TEST_ORDER = [
+        "frequency",           # 1
+        "block_frequency",     # 2
+        "cumulative_sums",     # 3
+        "runs",                # 4
+        "longest_run",         # 5
+        "rank",                # 6
+        "fft",                 # 7
+        "non_overlapping_template",  # 8
+        "overlapping_template",      # 9
+        "universal",           # 10
+        "approximate_entropy", # 11
+        "random_excursions",   # 12
+        "random_excursions_variant", # 13
+        "serial",              # 14
+        "linear_complexity",   # 15
     ]
 
-    def __init__(self, config: STSConfig):
+    def __init__(self, config):
         self.config = config
-        self._validate()
+        self.sts_dir = config.sts_path.resolve()
+        self.exp_dir = None
 
-    def _validate(self):
-        assess = self.config.get_assess_executable()
-        if not assess.exists():
-            raise FileNotFoundError(f"assess not found at {assess}. Build: cd {self.config.sts_path} && make")
-        if not self.config.input_file.exists():
-            raise FileNotFoundError(f"Input file not found: {self.config.input_file}")
-
-    def _setup_directories(self):
-        """Ensure experiments/AlgorithmTesting/ exists with proper subdirectories.
-        Clean old files but keep directory structure."""
-        sts_dir = self.config.sts_path.resolve()
-        algo_dir = sts_dir / "experiments" / "AlgorithmTesting"
-
-        # Create if missing
-        algo_dir.mkdir(parents=True, exist_ok=True)
-
-        for name in self.TEST_NAMES:
-            test_dir = algo_dir / name
-            test_dir.mkdir(exist_ok=True)
-            # Clear old files inside each test directory
-            for f in test_dir.iterdir():
-                if f.is_file():
-                    f.unlink()
+    def _detect_mode(self, file_path: Path) -> int:
+        if self.config.input_mode is not None:
+            return self.config.input_mode
+        with open(file_path, "rb") as f:
+            sample = f.read(1000)
+        text = sample.decode("ascii", errors="ignore")
+        valid = set("01 \n\r\t")
+        if all(c in valid for c in text) and len(text) > 100:
+            return 0
+        return 1
 
     def _relative_input(self) -> str:
+        abs_input = self.config.input_file.resolve()
+        abs_sts = self.sts_dir.resolve()
         try:
-            return str(self.config.input_file.relative_to(self.config.sts_path))
+            return str(abs_input.relative_to(abs_sts))
         except ValueError:
-            return str(self.config.input_file)
+            return str(abs_input.name)
 
-    def build_input(self) -> str:
+    def _get_param(self, test_name: str, param_name: str, default):
+        test_cfg = self.config.tests.get(test_name)
+        if test_cfg is None:
+            return default
+        return test_cfg.parameters.get(param_name, default)
+
+    def _has_custom_params(self) -> bool:
+        """Check if any test parameter differs from NIST default."""
+        for test_name, defaults in self.DEFAULTS.items():
+            for param_name, default_val in defaults.items():
+                actual = self._get_param(test_name, param_name, default_val)
+                if actual != default_val:
+                    return True
+        return False
+
+    def _build_input_all_tests(self, mode: int) -> str:
+        """Path A: Run all tests with default parameters."""
         lines = [
-            "0",
-            self._relative_input(),
-            "1" if self.config.run_all_tests else "0",
+            "0",                           # Input File
+            self._relative_input(),        # file path
+            "1",                           # run ALL tests
+            "0",                           # continue (accept defaults)
+            str(self.config.number_of_streams),
+            str(mode),
+        ]
+        return "\n".join(lines) + "\n"
+
+    def _build_input_custom(self, mode: int) -> str:
+        """Path B: Custom test selection with adjustable parameters."""
+        lines = [
+            "0",                           # Input File
+            self._relative_input(),        # file path
+            "0",                           # custom test selection
         ]
 
-        if not self.config.run_all_tests:
-            for i in range(1, 16):
-                lines.append("1" if i in self.config.selected_tests else "0")
+        # Enable/disable each of the 15 tests
+        for test_name in self.TEST_ORDER:
+            test_cfg = self.config.tests.get(test_name)
+            if test_cfg is not None and hasattr(test_cfg, "enabled"):
+                enabled = test_cfg.enabled
+            else:
+                enabled = True
+            lines.append("1" if enabled else "0")
 
-        tests = self.config.tests
+        # Parameter adjustments
+        # [1] Block Frequency
+        block_len = self._get_param("block_frequency", "block_length", 128)
+        lines.extend(["1", str(block_len)])
 
-        if self._needs_param(2):
-            lines.append(str(tests.get("block_frequency", {}).get("block_length", 128)))
-            lines.append("0")
+        # [2] NonOverlapping Template
+        non_overlap_len = self._get_param("non_overlapping_template", "block_length", 9)
+        lines.extend(["2", str(non_overlap_len)])
 
-        if self._needs_param(8):
-            lines.append(str(tests.get("non_overlapping_template", {}).get("template_length", 9)))
-            lines.append(str(tests.get("non_overlapping_template", {}).get("num_templates", 148)))
-            lines.append("0")
+        # [3] Overlapping Template
+        overlap_len = self._get_param("overlapping_template", "block_length", 9)
+        lines.extend(["3", str(overlap_len)])
 
-        if self._needs_param(9):
-            lines.append(str(tests.get("overlapping_template", {}).get("template_length", 9)))
-            lines.append("0")
+        # [4] Approximate Entropy
+        approx_len = self._get_param("approximate_entropy", "block_length", 10)
+        lines.extend(["4", str(approx_len)])
 
-        if self._needs_param(11):
-            lines.append(str(tests.get("approximate_entropy", {}).get("block_length", 10)))
-            lines.append("0")
+        # [5] Serial
+        serial_len = self._get_param("serial", "block_length", 16)
+        lines.extend(["5", str(serial_len)])
 
-        if self._needs_param(14):
-            lines.append(str(tests.get("serial", {}).get("block_length", 16)))
-            lines.append("0")
+        # [6] Linear Complexity
+        linear_len = self._get_param("linear_complexity", "block_length", 500)
+        lines.extend(["6", str(linear_len)])
 
-        if self._needs_param(15):
-            lines.append(str(tests.get("linear_complexity", {}).get("block_length", 500)))
-            lines.append("0")
-
+        lines.append("0")  # done adjusting
         lines.append(str(self.config.number_of_streams))
-        lines.append(str(self.config.input_mode))
+        lines.append(str(mode))
 
         return "\n".join(lines) + "\n"
 
-    def _needs_param(self, idx: int) -> bool:
-        if self.config.run_all_tests:
-            return True
-        return idx in self.config.selected_tests
+    def _build_input(self, mode: int) -> str:
+        if self._has_custom_params():
+            return self._build_input_custom(mode)
+        return self._build_input_all_tests(mode)
 
-    def run(self, timeout: int = 3600) -> RunResult:
-        exp_dir = self.config.get_experiment_path()
-        exp_dir.mkdir(parents=True, exist_ok=True)
+    def _setup_directories(self):
+        sts_dir = self.sts_dir
+        algo_dir = sts_dir / "experiments" / "AlgorithmTesting"
+        algo_dir.mkdir(parents=True, exist_ok=True)
 
-        self._setup_directories()
+        test_names = [
+            "Frequency", "BlockFrequency", "CumulativeSums", "Runs",
+            "LongestRun", "Rank", "FFT", "NonOverlappingTemplate",
+            "OverlappingTemplate", "Universal", "ApproximateEntropy",
+            "RandomExcursions", "RandomExcursionsVariant", "Serial", "LinearComplexity"
+        ]
+        for name in test_names:
+            (algo_dir / name).mkdir(exist_ok=True)
+            for f in (algo_dir / name).iterdir():
+                if f.is_file():
+                    f.unlink()
 
-        # Clear old top-level result files
-        sts_dir = self.config.sts_path.resolve()
+    def _clean_old_results(self):
+        sts_dir = self.sts_dir
         for name in ["finalAnalysisReport.txt", "stats.txt", "results.txt", "freq.txt"]:
             p = sts_dir / name
             if p.exists():
                 p.unlink()
 
-        assess = self.config.get_assess_executable().resolve()
-        input_data = self.build_input()
-        cwd = str(sts_dir)
-
-        try:
-            result = subprocess.run(
-                [str(assess), str(self.config.stream_length)],
-                input=input_data,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=cwd,
-            )
-
-            self._copy_results(exp_dir)
-
-            success = (
-                "Statistical Testing Complete" in result.stdout
-                or (exp_dir / "finalAnalysisReport.txt").exists()
-            )
-
-            return RunResult(exp_dir, result.stdout, result.stderr, result.returncode, success)
-
-        except subprocess.TimeoutExpired:
-            return RunResult(exp_dir, "", f"Timeout after {timeout}s", -1, False)
-        except Exception as e:
-            return RunResult(exp_dir, "", str(e), -1, False)
-
-    def _copy_results(self, exp_dir: Path):
-        sts_dir = self.config.sts_path.resolve()
+    def _copy_results(self, dest: Path):
+        sts_dir = self.sts_dir
         for name in ["finalAnalysisReport.txt", "stats.txt", "results.txt", "freq.txt"]:
             src = sts_dir / name
             if src.exists():
-                shutil.copy2(src, exp_dir / name)
+                shutil.copy2(src, dest / name)
 
         algo_dir = sts_dir / "experiments" / "AlgorithmTesting"
         if algo_dir.exists():
             for item in algo_dir.iterdir():
                 if item.is_file():
-                    shutil.copy2(item, exp_dir / item.name)
+                    shutil.copy2(item, dest / item.name)
                 elif item.is_dir():
-                    dst = exp_dir / item.name
+                    dst = dest / item.name
                     if dst.exists():
                         shutil.rmtree(dst)
                     shutil.copytree(item, dst)
+
+    def run(self) -> Path:
+        mode = self._detect_mode(self.config.input_file)
+
+        self.exp_dir = Path("experiments") / f"{self.config.generator}_{self.config.stream_length}_{self.config.number_of_streams}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        self.exp_dir.mkdir(parents=True, exist_ok=True)
+
+        self._setup_directories()
+        self._clean_old_results()
+
+        cmd = ["./assess", str(self.config.stream_length)]
+        inp = self._build_input(mode)
+
+        result = subprocess.run(
+            cmd,
+            input=inp,
+            cwd=self.sts_dir,
+            capture_output=True,
+            text=True,
+            timeout=600
+        )
+
+        self._copy_results(self.exp_dir)
+
+        report = self.sts_dir / "experiments" / "AlgorithmTesting" / "finalAnalysisReport.txt"
+        if not report.exists() or report.stat().st_size < 100:
+            raise RuntimeError(f"assess failed. stdout: {result.stdout[-500:]}")
+
+        return self.exp_dir

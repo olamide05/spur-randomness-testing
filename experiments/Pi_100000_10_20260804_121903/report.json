@@ -1,0 +1,119 @@
+{
+  "generator": "Pi",
+  "overall_status": "fail",
+  "experiment_directory": "experiments/Pi_100000_10_20260804_121903",
+  "tests": [
+    {
+      "name": "frequency",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.534146,
+      "proportion": 1.0
+    },
+    {
+      "name": "block_frequency",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.739918,
+      "proportion": 1.0
+    },
+    {
+      "name": "cumulative_sums",
+      "status": "pass",
+      "passed": 20,
+      "total": 20,
+      "p_value": 0.911413,
+      "proportion": 1.0
+    },
+    {
+      "name": "runs",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.122325,
+      "proportion": 1.0
+    },
+    {
+      "name": "longest_run",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.213309,
+      "proportion": 1.0
+    },
+    {
+      "name": "rank",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.911413,
+      "proportion": 1.0
+    },
+    {
+      "name": "fft",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.739918,
+      "proportion": 1.0
+    },
+    {
+      "name": "non_overlapping_template",
+      "status": "pass",
+      "passed": 1467,
+      "total": 1480,
+      "p_value": 0.739918,
+      "proportion": 0.9912162162162163
+    },
+    {
+      "name": "overlapping_template",
+      "status": "fail",
+      "passed": 9,
+      "total": 10,
+      "p_value": 0.066882,
+      "proportion": 0.9
+    },
+    {
+      "name": "approximate_entropy",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.534146,
+      "proportion": 1.0
+    },
+    {
+      "name": "random_excursions",
+      "status": "pass",
+      "passed": 16,
+      "total": 16,
+      "p_value": null,
+      "proportion": 1.0
+    },
+    {
+      "name": "random_excursions_variant",
+      "status": "pass",
+      "passed": 36,
+      "total": 36,
+      "p_value": null,
+      "proportion": 1.0
+    },
+    {
+      "name": "serial",
+      "status": "fail",
+      "passed": 18,
+      "total": 20,
+      "p_value": 0.350485,
+      "proportion": 0.9
+    },
+    {
+      "name": "linear_complexity",
+      "status": "pass",
+      "passed": 10,
+      "total": 10,
+      "p_value": 0.739918,
+      "proportion": 1.0
+    }
+  ]
+}

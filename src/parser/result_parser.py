@@ -1,209 +1,182 @@
-"""Result Parser."""
 import re
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Dict
-from statistics import mean
 
 
 @dataclass
 class TestResult:
     name: str
-    status: str
-    p_value: Optional[float]
-    proportion: Optional[float]
-    pass_rate: str
-    mean_p_value: Optional[float]
-    min_p_value: Optional[float]
-    max_p_value: Optional[float]
-    notes: str = ""
+    passed: int
+    total: int
+    p_value: Optional[float] = None
+    proportion: Optional[float] = None
+    status: str = "unknown"
 
 
 @dataclass
 class ExperimentSummary:
     generator: str
-    framework: str
-    tests: List[TestResult]
-    overall_passed: bool
     experiment_directory: Path
+    overall_status: str = "unknown"
+    tests: List[TestResult] = field(default_factory=list)
 
 
 class ResultParser:
     def __init__(self, experiment_directory: Path, generator: str = ""):
         self.experiment_directory = Path(experiment_directory)
         self.generator = generator
-        self.framework = "NIST STS 2.1.2"
 
     def parse(self) -> ExperimentSummary:
-        report = self._read_file("finalAnalysisReport.txt")
-        stats = self._parse_stats()
-        results = self._parse_results()
-        tests = self._parse_report(report, stats, results)
-        overall = all(t.status == "Pass" for t in tests) if tests else False
-        return ExperimentSummary(
+        report = self.experiment_directory / "finalAnalysisReport.txt"
+        if not report.exists():
+            raise FileNotFoundError(f"Report not found: {report}")
+
+        summary = ExperimentSummary(
             generator=self.generator,
-            framework=self.framework,
-            tests=tests,
-            overall_passed=overall,
             experiment_directory=self.experiment_directory,
+            tests=[]
         )
 
-    def _read_file(self, filename: str) -> str:
-        path = self.experiment_directory / filename
-        return path.read_text() if path.exists() else ""
+        report_data: Dict[str, dict] = {}
+        in_results = False
 
-    def _parse_stats(self) -> Dict[str, List[float]]:
-        text = self._read_file("stats.txt")
-        data = {}
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
-        i = 0
-        while i < len(lines):
-            name = lines[i]
-            i += 1
-            values = []
-            while i < len(lines):
-                try:
-                    values.append(float(lines[i]))
-                    i += 1
-                except ValueError:
-                    break
-            if values:
-                data[name] = values
-        return data
+        with open(report) as f:
+            for line in f:
+                if "RESULTS FOR THE UNIFORMITY" in line:
+                    in_results = True
+                    continue
+                if not in_results:
+                    continue
 
-    def _parse_results(self) -> Dict[str, List[int]]:
-        text = self._read_file("results.txt")
-        data = {}
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
-        i = 0
-        while i < len(lines):
-            name = lines[i]
-            i += 1
-            values = []
-            while i < len(lines):
-                try:
-                    values.append(int(lines[i]))
-                    i += 1
-                except ValueError:
-                    break
-            if values:
-                data[name] = values
-        return data
+                parsed = self._parse_report_line(line)
+                if not parsed:
+                    continue
 
-    def _parse_report(self, report: str, stats: Dict, results: Dict) -> List[TestResult]:
-        tests = []
-        aggregated = {}
-        seen = set()
+                name, p_val, passed, total = parsed
 
-        for line in report.splitlines():
-            parsed = self._parse_line(line)
-            if not parsed:
-                continue
+                if name not in report_data:
+                    report_data[name] = {
+                        "p_values": [],
+                        "passed": 0,
+                        "total": 0
+                    }
 
-            name, pval_str, prop_str, starred = parsed
+                report_data[name]["p_values"].append(p_val)
+                report_data[name]["passed"] += passed
+                report_data[name]["total"] += total
 
-            # Skip lines where name is just "*" (malformed)
-            if not name or name == "*":
-                continue
+        for name, data in report_data.items():
+            test = TestResult(
+                name=name,
+                passed=0,
+                total=0,
+                status="unknown"
+            )
 
-            if name == "NonOverlappingTemplate":
-                if name not in aggregated:
-                    aggregated[name] = {"pvals": [], "passed": 0, "total": 0}
-                if pval_str and pval_str not in ("----", "------"):
-                    try:
-                        aggregated[name]["pvals"].append(float(pval_str))
-                    except:
-                        pass
-                if prop_str and "/" in prop_str:
-                    try:
-                        passed, total = map(int, prop_str.split("/"))
-                        aggregated[name]["passed"] += passed
-                        aggregated[name]["total"] += total
-                    except:
-                        pass
-                continue
+            detail_passed, detail_total = self._read_detail_file(name)
+            if detail_total > 0:
+                test.passed = detail_passed
+                test.total = detail_total
+            else:
+                test.passed = data["passed"]
+                test.total = data["total"]
 
-            if name in seen:
-                continue
-            seen.add(name)
+            if test.total > 0:
+                test.proportion = test.passed / test.total
+                test.status = "pass" if test.proportion >= 0.96 else "fail"
+            else:
+                test.status = "skipped"
 
-            test = self._create_result(name, pval_str, prop_str, starred, stats, results)
-            tests.append(test)
+            p_vals = [p for p in data["p_values"] if p is not None]
+            if p_vals:
+                test.p_value = p_vals[0]
 
-        if "NonOverlappingTemplate" in aggregated:
-            agg = aggregated["NonOverlappingTemplate"]
-            pval = mean(agg["pvals"]) if agg["pvals"] else None
-            proportion = agg["passed"] / agg["total"] if agg["total"] > 0 else None
-            pass_rate = f"{agg['passed']}/{agg['total']}"
-            status = "Pass" if proportion and proportion >= 0.96 else "Fail" if proportion else "Not Run"
-            pvals = stats.get("NonOverlappingTemplate", [])
-            tests.append(TestResult(
-                name="non_overlapping_template",
-                status=status,
-                p_value=pval,
-                proportion=proportion,
-                pass_rate=pass_rate,
-                mean_p_value=mean(pvals) if pvals else None,
-                min_p_value=min(pvals) if pvals else None,
-                max_p_value=max(pvals) if pvals else None,
-            ))
+            summary.tests.append(test)
 
-        return tests
+        evaluated = [t for t in summary.tests if t.total > 0]
+        if evaluated:
+            passed_count = sum(1 for t in evaluated if t.status == "pass")
+            summary.overall_status = "pass" if passed_count == len(evaluated) else "fail"
 
-    def _parse_line(self, line: str):
-        # Match NIST report line
-        # The * failure marker appears before the test name
-        pattern = r'^\s*\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+([\d.]+|----|------)\s+([\d/]+|------)\s+(.*)$'
-        match = re.match(pattern, line)
-        if match:
-            rest = match.group(3).strip()
-            # Check if rest starts with * (failure marker)
-            starred = False
-            if rest.startswith("*"):
-                starred = True
-                rest = rest[1:].strip()
-            return (rest, match.group(1), match.group(2), starred)
-        return None
+        return summary
 
-    def _create_result(self, name: str, pval_str: str, prop_str: str, starred: bool,
-                      stats: Dict, results: Dict) -> TestResult:
-        p_value = None
-        if pval_str and pval_str not in ("----", "------"):
+    def _parse_report_line(self, line: str) -> Optional[tuple]:
+        parts = line.strip().split()
+        if len(parts) < 3:
+            return None
+
+        p_val_str = parts[-3]
+        prop_str = parts[-2]
+        raw_name = parts[-1].replace("*", "").strip()
+
+        name = self._normalize_name(raw_name.lower())
+
+        p_val = None
+        if p_val_str != "----":
             try:
-                p_value = float(pval_str)
-            except:
-                pass
+                p_val = float(p_val_str)
+            except ValueError:
+                return None
 
-        proportion = None
-        pass_rate = prop_str if prop_str not in ("------", "") else "0/0"
-        if "/" in pass_rate:
+        passed, total = 0, 0
+        if prop_str != "------":
             try:
-                passed, total = map(int, pass_rate.split("/"))
-                if total > 0:
-                    proportion = passed / total
-            except:
-                pass
+                p_str, t_str = prop_str.split("/")
+                passed = int(p_str)
+                total = int(t_str)
+            except ValueError:
+                return None
 
-        if pass_rate == "0/0" or prop_str in ("------", ""):
-            status = "Not Run"
-        elif proportion and proportion >= 0.96:
-            status = "Pass"
-        else:
-            status = "Fail"
+        return name, p_val, passed, total
 
-        notes = "* FAILED" if starred else ""
+    def _normalize_name(self, raw: str) -> str:
+        mapping = {
+            "nonoverlappingtemplate": "non_overlapping_template",
+            "overlappingtemplate": "overlapping_template",
+            "randomexcursionsvariant": "random_excursions_variant",
+            "randomexcursions": "random_excursions",
+            "approximateentropy": "approximate_entropy",
+            "linearcomplexity": "linear_complexity",
+            "blockfrequency": "block_frequency",
+            "cumulativesums": "cumulative_sums",
+            "longestrun": "longest_run",
+            "frequency": "frequency",
+            "runs": "runs",
+            "rank": "rank",
+            "fft": "fft",
+            "universal": "universal",
+            "serial": "serial",
+        }
+        return mapping.get(raw, raw)
 
-        stat_values = stats.get(name, [])
-        normalized = name.lower().replace(" ", "_").replace("-", "_")
+    def _read_detail_file(self, name: str) -> tuple:
+        dir_name = name.replace("_", "").title()
+        if dir_name == "Cumulativesums":
+            dir_name = "CumulativeSums"
+        if dir_name == "Fft":
+            dir_name = "FFT"
 
-        return TestResult(
-            name=normalized,
-            status=status,
-            p_value=p_value,
-            proportion=proportion,
-            pass_rate=pass_rate,
-            mean_p_value=mean(stat_values) if stat_values else None,
-            min_p_value=min(stat_values) if stat_values else None,
-            max_p_value=max(stat_values) if stat_values else None,
-            notes=notes,
-        )
+        test_dir = self.experiment_directory / dir_name
+        if not test_dir.exists():
+            return 0, 0
+
+        results = list(test_dir.glob("results*.txt"))
+        if not results:
+            return 0, 0
+
+        passed = 0
+        total = 0
+        for r in results:
+            try:
+                with open(r) as f:
+                    for line in f:
+                        if "SUCCESS" in line:
+                            passed += 1
+                            total += 1
+                        elif "FAILURE" in line:
+                            total += 1
+            except Exception:
+                continue
+
+        return passed, total
