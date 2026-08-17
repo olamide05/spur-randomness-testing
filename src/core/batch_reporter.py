@@ -8,6 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class BatchReporter:
     summaries: List
+    config: object = None
 
     def _collect_tests(self) -> List[str]:
         """Get all unique test names across all runs."""
@@ -78,6 +79,25 @@ class BatchReporter:
         with open(output_path, "w") as f:
             json.dump(data, f, indent=2)
 
+    def _config_panel(self) -> str:
+        if self.config is None:
+            return ""
+
+        enabled_tests = []
+        for name, test_config in getattr(self.config, "tests", {}).items():
+            enabled = test_config.get("enabled", True) if isinstance(test_config, dict) else getattr(test_config, "enabled", True)
+            if enabled:
+                enabled_tests.append(name.replace("_", " ").title())
+
+        return f'''<details class="config">
+  <summary>Run configuration</summary>
+  <dl>
+    <dt>Stream length</dt><dd>{html.escape(str(getattr(self.config, "stream_length", "—")))} bits</dd>
+    <dt>Streams</dt><dd>{html.escape(str(getattr(self.config, "number_of_streams", "—")))}</dd>
+    <dt>Enabled tests</dt><dd>{html.escape(", ".join(enabled_tests) or "None")}</dd>
+  </dl>
+</details>'''
+
     def generate_html(self, output_path: Path):
         """Generate an HTML comparison dashboard across all runs in the batch."""
         tests = self._collect_tests()
@@ -111,6 +131,22 @@ class BatchReporter:
 
         passed_n = sum(1 for s in self.summaries if s.overall_status == "pass")
 
+        cards = []
+        for summary in self.summaries:
+            evaluated = [test for test in summary.tests if test.total > 0]
+            passed = sum(1 for test in evaluated if test.status == "pass")
+            test_rows = "".join(
+                f"<li><span>{html.escape(test.name.replace(chr(95), chr(32)).title())}</span><b>{html.escape(test.status.upper())} · {test.passed}/{test.total}</b></li>"
+                for test in summary.tests
+            )
+            cards.append(
+                f'''<section class="summary-card">
+  <h2>{html.escape(str(summary.generator))}</h2>
+  <p><b>{passed}</b> / {len(evaluated)} evaluated tests passed</p>
+  <details><summary>View this file's test results</summary><ul>{test_rows}</ul></details>
+</section>'''
+            )
+
         html_doc = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -140,6 +176,19 @@ class BatchReporter:
     padding-bottom: 20px; margin-bottom: 20px;
   }}
   .meta b {{ color: var(--ink); }}
+  details.config {{ border: 1px solid var(--line); margin: 0 0 20px; }}
+  details.config summary {{ cursor: pointer; font-size: 12px; font-weight: 700; padding: 10px 12px; }}
+  details.config dl {{ display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; padding: 0 12px 12px; font-size: 12px; }}
+  details.config dt {{ color: var(--ink-soft); }}
+  details.config dd {{ margin: 0; }}
+  .summary-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 0 0 20px; }}
+  .summary-card {{ border: 1px solid var(--line); background: white; padding: 14px; }}
+  .summary-card h2 {{ font-size: 15px; margin: 0; overflow-wrap: anywhere; }}
+  .summary-card p {{ color: var(--ink-soft); font-size: 12px; margin: 8px 0; }}
+  .summary-card p b {{ color: var(--ink); }}
+  .summary-card summary {{ cursor: pointer; font-size: 12px; }}
+  .summary-card ul {{ list-style: none; margin: 10px 0 0; padding: 0; font-size: 11px; }}
+  .summary-card li {{ display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding: 5px 0; }}
   .table-wrap {{ overflow-x: auto; border: 1px solid var(--line); }}
   table {{ border-collapse: collapse; width: 100%; font-size: 12px; table-layout: fixed; }}
   th, td {{ padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }}
@@ -167,6 +216,8 @@ class BatchReporter:
   <p class="eyebrow">NIST SP 800-22 &middot; Batch Comparison</p>
   <h1>{len(self.summaries)} generators &middot; {len(tests)} tests</h1>
   <p class="meta"><b>{passed_n}</b> / {len(self.summaries)} generators passed every evaluated test</p>
+  {self._config_panel()}
+  <div class="summary-grid">{"".join(cards)}</div>
   <div class="table-wrap">
   <table>
   <thead><tr><th>Generator</th><th>Overall</th>{header_cols}</tr></thead>

@@ -1,3 +1,4 @@
+import hashlib
 import subprocess
 import shutil
 from pathlib import Path
@@ -55,7 +56,10 @@ class NISTRunner:
         try:
             return str(abs_input.relative_to(abs_sts))
         except ValueError:
-            dest = abs_sts / abs_input.name
+            suffix = "".join(ch for ch in abs_input.suffix if ch.isalnum())[:10]
+            safe_suffix = f".{suffix}" if suffix else ".bin"
+            digest = hashlib.sha256(str(abs_input).encode()).hexdigest()[:16]
+            dest = abs_sts / f"input_{digest}{safe_suffix}"
             if not dest.exists() or dest.stat().st_mtime < abs_input.stat().st_mtime:
                 shutil.copy2(abs_input, dest)
             return dest.name
