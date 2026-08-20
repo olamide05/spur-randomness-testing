@@ -6,7 +6,7 @@ runs,pass,10,10,0.739918,1.0
 longest_run,pass,10,10,0.534146,1.0
 rank,pass,10,10,0.213309,1.0
 fft,pass,10,10,0.534146,1.0
-non_overlapping_template,pass,1468,1480,0.350485,0.9918918918918919
+non_overlapping_template,pass,1458,1480,0.350485,0.9851351351351352
 overlapping_template,pass,10,10,0.350485,1.0
 universal,fail,0,10,0.0,0.0
 approximate_entropy,pass,10,10,0.911413,1.0

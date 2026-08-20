@@ -1,5 +1,6 @@
 import html
 import json
+from src.exporters.html_exporter import _config_panel as _single_config_panel
 from pathlib import Path
 from typing import List
 from dataclasses import dataclass
@@ -80,23 +81,7 @@ class BatchReporter:
             json.dump(data, f, indent=2)
 
     def _config_panel(self) -> str:
-        if self.config is None:
-            return ""
-
-        enabled_tests = []
-        for name, test_config in getattr(self.config, "tests", {}).items():
-            enabled = test_config.get("enabled", True) if isinstance(test_config, dict) else getattr(test_config, "enabled", True)
-            if enabled:
-                enabled_tests.append(name.replace("_", " ").title())
-
-        return f'''<details class="config">
-  <summary>Run configuration</summary>
-  <dl>
-    <dt>Stream length</dt><dd>{html.escape(str(getattr(self.config, "stream_length", "—")))} bits</dd>
-    <dt>Streams</dt><dd>{html.escape(str(getattr(self.config, "number_of_streams", "—")))}</dd>
-    <dt>Enabled tests</dt><dd>{html.escape(", ".join(enabled_tests) or "None")}</dd>
-  </dl>
-</details>'''
+        return _single_config_panel(self.config)
 
     def generate_html(self, output_path: Path):
         """Generate an HTML comparison dashboard across all runs in the batch."""
@@ -189,6 +174,13 @@ class BatchReporter:
   .summary-card summary {{ cursor: pointer; font-size: 12px; }}
   .summary-card ul {{ list-style: none; margin: 10px 0 0; padding: 0; font-size: 11px; }}
   .summary-card li {{ display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding: 5px 0; }}
+  .summary-card li span {{ min-width: 0; overflow-wrap: anywhere; }}
+  .summary-card li b {{ flex: 0 0 auto; white-space: nowrap; }}
+  @media (max-width: 560px) {{
+    .summary-card li {{ align-items: flex-start; flex-wrap: wrap; }}
+    .summary-card li span {{ flex-basis: 100%; }}
+    .summary-card li b {{ margin-left: 0; }}
+  }}
   .table-wrap {{ overflow-x: auto; border: 1px solid var(--line); }}
   table {{ border-collapse: collapse; width: 100%; font-size: 12px; table-layout: fixed; }}
   th, td {{ padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }}

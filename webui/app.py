@@ -254,6 +254,9 @@ def run():
     except ValueError:
         return _error_page("Stream length, number of streams, and cores must be whole numbers.")
 
+    if stream_length < 1 or number_of_streams < 1:
+        return _error_page("Stream length and number of streams must both be at least 1.")
+
     tests_cfg = {}
     for name in NISTRunner.TEST_ORDER:
         enabled = request.form.get(f"enable_{name}") == "on"
@@ -265,6 +268,10 @@ def run():
                 params["block_length"] = int(raw) if raw else default_len
             except ValueError:
                 return _error_page(f"Block length for {TEST_LABELS[name]} must be a whole number.")
+            if params["block_length"] < 1:
+                return _error_page(f"Block length for {TEST_LABELS[name]} must be at least 1.")
+            if name == "non_overlapping_template" and not 2 <= params["block_length"] <= 21:
+                return _error_page("Non Overlapping Template block length must be between 2 and 21 (the template files bundled with STS).")
         tests_cfg[name] = {"enabled": enabled, "parameters": params}
 
     if not any(t["enabled"] for t in tests_cfg.values()):

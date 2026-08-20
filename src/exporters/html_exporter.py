@@ -1,6 +1,8 @@
 """HTML dashboard exporter."""
 import html
 from pathlib import Path
+from src.automation.nist_runner import NISTRunner
+from src.config.run_configuration import effective_test_settings
 
 _PASS = "#1F6E4A"
 _PASS_BG = "#E7F2EC"
@@ -60,12 +62,24 @@ def _config_panel(config) -> str:
     stream_length = getattr(config, "stream_length", "—")
     number_of_streams = getattr(config, "number_of_streams", "—")
     tests = ", ".join(enabled_tests) if enabled_tests else "None"
+    settings = effective_test_settings(config, NISTRunner.DEFAULTS)
+    parameter_rows = "".join(
+        "<dt>{label}</dt><dd>{value}</dd>".format(
+            label=html.escape(setting["test"].replace("_", " ").title() + " block length"),
+            value=html.escape(
+                f"{setting['default']} → {setting['value']} (custom)"
+                if setting["custom"] else f"{setting['value']} (STS default)"
+            ),
+        )
+        for setting in settings
+    ) or "<dt>Custom parameters</dt><dd>No parameterized tests enabled</dd>"
     return f"""<details class=\"config\">
-  <summary>Run configuration</summary>
+  <summary>Run configuration and applied parameters</summary>
   <dl>
     <dt>Stream length</dt><dd>{html.escape(str(stream_length))} bits</dd>
     <dt>Streams</dt><dd>{html.escape(str(number_of_streams))}</dd>
     <dt>Enabled tests</dt><dd>{html.escape(tests)}</dd>
+    {parameter_rows}
   </dl>
 </details>"""
 

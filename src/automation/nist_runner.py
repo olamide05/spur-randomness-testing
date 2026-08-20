@@ -70,7 +70,17 @@ class NISTRunner:
             return default
         return test_cfg.parameters.get(param_name, default)
 
-    def _has_custom_params(self) -> bool:
+    def _requires_custom_input(self) -> bool:
+        """Whether STS needs its per-test selection/parameter dialogue.
+
+        Selecting "all tests" in STS ignores disabled tests. It is therefore
+        only safe when every test is enabled and every block length is still
+        its STS default.
+        """
+        for test_name in self.TEST_ORDER:
+            test_cfg = self.config.tests.get(test_name)
+            if test_cfg is not None and not test_cfg.enabled:
+                return True
         for test_name, defaults in self.DEFAULTS.items():
             for param_name, default_val in defaults.items():
                 actual = self._get_param(test_name, param_name, default_val)
@@ -101,23 +111,17 @@ class NISTRunner:
             enabled = test_cfg.enabled if test_cfg is not None and hasattr(test_cfg, "enabled") else True
             lines.append("1" if enabled else "0")
 
-        block_len = self._get_param("block_frequency", "block_length", 128)
-        lines.extend(["1", str(block_len)])
-
-        non_overlap_len = self._get_param("non_overlapping_template", "block_length", 9)
-        lines.extend(["2", str(non_overlap_len)])
-
-        overlap_len = self._get_param("overlapping_template", "block_length", 9)
-        lines.extend(["3", str(overlap_len)])
-
-        approx_len = self._get_param("approximate_entropy", "block_length", 10)
-        lines.extend(["4", str(approx_len)])
-
-        serial_len = self._get_param("serial", "block_length", 16)
-        lines.extend(["5", str(serial_len)])
-
-        linear_len = self._get_param("linear_complexity", "block_length", 500)
-        lines.extend(["6", str(linear_len)])
+        # STS numbers this menu from only the enabled parameterized tests.
+        # Build it dynamically; fixed IDs apply the wrong value as soon as a
+        # preceding test is unchecked.
+        menu_index = 0
+        for test_name, defaults in self.DEFAULTS.items():
+            test_cfg = self.config.tests.get(test_name)
+            enabled = test_cfg.enabled if test_cfg is not None else True
+            if enabled:
+                menu_index += 1
+                block_len = self._get_param(test_name, "block_length", defaults["block_length"])
+                lines.extend([str(menu_index), str(block_len)])
 
         lines.append("0")
         lines.append(str(self.config.number_of_streams))
@@ -126,7 +130,7 @@ class NISTRunner:
         return "\n".join(lines) + "\n"
 
     def _build_input(self, mode: int, input_name: str) -> str:
-        if self._has_custom_params():
+        if self._requires_custom_input():
             return self._build_input_custom(mode, input_name)
         return self._build_input_all_tests(mode, input_name)
 
