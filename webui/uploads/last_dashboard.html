@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>STS Report — takum_log16_coupled_lfsr 1</title>
+<title>STS Report — sv_generator</title>
 <style>
   :root {
     --paper: #F6F7F5; --ink: #161D1A; --ink-soft: #4B564F; --line: #DCE1DC;
@@ -82,13 +82,13 @@
   <div class="masthead">
     <div>
       <p class="eyebrow">NIST SP 800-22 &middot; STS Report</p>
-      <h1>takum_log16_coupled_lfsr 1</h1>
-      <p class="meta">takum_log16_coupled_lfsr 1_20260820_152158</p>
+      <h1>sv_generator</h1>
+      <p class="meta">bitstream_20260820_212228</p>
     </div>
     <div class="stamp fail">FAIL</div>
   </div>
   <div class="tally">
-    <span><b>11</b> / 13 tests passed</span>
+    <span><b>12</b> / 15 tests passed</span>
   </div>
   <details class="config">
   <summary>Run configuration and applied parameters</summary>
@@ -96,14 +96,14 @@
     <dt>Stream length</dt><dd>100000 bits</dd>
     <dt>Streams</dt><dd>10</dd>
     <dt>Enabled tests</dt><dd>Frequency, Block Frequency, Cumulative Sums, Runs, Longest Run, Rank, Fft, Non Overlapping Template, Overlapping Template, Universal, Approximate Entropy, Random Excursions, Random Excursions Variant, Serial, Linear Complexity</dd>
-    <dt>Block Frequency block length</dt><dd>128 (STS default)</dd><dt>Non Overlapping Template block length</dt><dd>9 → 10 (custom)</dd><dt>Overlapping Template block length</dt><dd>9 (STS default)</dd><dt>Approximate Entropy block length</dt><dd>10 (STS default)</dd><dt>Serial block length</dt><dd>16 (STS default)</dd><dt>Linear Complexity block length</dt><dd>500 (STS default)</dd>
+    <dt>Block Frequency block length</dt><dd>128 (STS default)</dd><dt>Non Overlapping Template block length</dt><dd>9 (STS default)</dd><dt>Overlapping Template block length</dt><dd>9 (STS default)</dd><dt>Approximate Entropy block length</dt><dd>10 (STS default)</dd><dt>Serial block length</dt><dd>16 (STS default)</dd><dt>Linear Complexity block length</dt><dd>500 (STS default)</dd>
   </dl>
 </details>
   <div class="row">
-  <div class="row-name">Cumulative Sums</div>
-  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span></div>
-  <div class="row-count">18/20</div>
-  <div class="row-p">p=0.350485</div>
+  <div class="row-name">Rank</div>
+  <div class="bar"><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span></div>
+  <div class="row-count">0/10</div>
+  <div class="row-p">p=0.000000</div>
   <div class="badge fail">FAIL</div>
 </div><div class="row">
   <div class="row-name">Universal</div>
@@ -112,16 +112,28 @@
   <div class="row-p">p=0.000000</div>
   <div class="badge fail">FAIL</div>
 </div><div class="row">
+  <div class="row-name">Linear Complexity</div>
+  <div class="bar"><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span><span class="chip chip-fail"></span></div>
+  <div class="row-count">0/10</div>
+  <div class="row-p">p=0.000000</div>
+  <div class="badge fail">FAIL</div>
+</div><div class="row">
   <div class="row-name">Frequency</div>
-  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-fail"></span></div>
-  <div class="row-count">9/10</div>
-  <div class="row-p">p=0.350485</div>
+  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
+  <div class="row-count">10/10</div>
+  <div class="row-p">p=0.035174</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Block Frequency</div>
   <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
   <div class="row-count">10/10</div>
   <div class="row-p">p=0.739918</div>
+  <div class="badge pass">PASS</div>
+</div><div class="row">
+  <div class="row-name">Cumulative Sums</div>
+  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
+  <div class="row-count">20/20</div>
+  <div class="row-p">p=0.213309</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Runs</div>
@@ -133,62 +145,50 @@
   <div class="row-name">Longest Run</div>
   <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
   <div class="row-count">10/10</div>
-  <div class="row-p">p=0.534146</div>
-  <div class="badge pass">PASS</div>
-</div><div class="row">
-  <div class="row-name">Rank</div>
-  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
-  <div class="row-count">10/10</div>
-  <div class="row-p">p=0.213309</div>
+  <div class="row-p">p=0.350485</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Fft</div>
   <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
   <div class="row-count">10/10</div>
-  <div class="row-p">p=0.534146</div>
+  <div class="row-p">p=0.911413</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Non Overlapping Template</div>
-  <div class="bar bar-solid"><div class="bar-pass" style="width:98.51%"></div><div class="bar-fail" style="width:1.49%"></div></div>
-  <div class="row-count">1458/1480</div>
+  <div class="bar bar-solid"><div class="bar-pass" style="width:98.92%"></div><div class="bar-fail" style="width:1.08%"></div></div>
+  <div class="row-count">1464/1480</div>
   <div class="row-p">p=0.350485</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Overlapping Template</div>
   <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
   <div class="row-count">10/10</div>
-  <div class="row-p">p=0.350485</div>
+  <div class="row-p">p=0.739918</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Approximate Entropy</div>
   <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
   <div class="row-count">10/10</div>
-  <div class="row-p">p=0.911413</div>
+  <div class="row-p">p=0.534146</div>
+  <div class="badge pass">PASS</div>
+</div><div class="row">
+  <div class="row-name">Random Excursions</div>
+  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
+  <div class="row-count">24/24</div>
+  <div class="row-p">p=—</div>
+  <div class="badge pass">PASS</div>
+</div><div class="row">
+  <div class="row-name">Random Excursions Variant</div>
+  <div class="bar bar-solid"><div class="bar-pass" style="width:100.00%"></div><div class="bar-fail" style="width:0.00%"></div></div>
+  <div class="row-count">54/54</div>
+  <div class="row-p">p=—</div>
   <div class="badge pass">PASS</div>
 </div><div class="row">
   <div class="row-name">Serial</div>
   <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
   <div class="row-count">20/20</div>
-  <div class="row-p">p=0.739918</div>
+  <div class="row-p">p=0.911413</div>
   <div class="badge pass">PASS</div>
-</div><div class="row">
-  <div class="row-name">Linear Complexity</div>
-  <div class="bar"><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span><span class="chip chip-pass"></span></div>
-  <div class="row-count">10/10</div>
-  <div class="row-p">p=0.350485</div>
-  <div class="badge pass">PASS</div>
-</div><div class="row">
-  <div class="row-name">Random Excursions</div>
-  <div class="bar bar-empty">not run</div>
-  <div class="row-count">—</div>
-  <div class="row-p">p=—</div>
-  <div class="badge skip">SKIP</div>
-</div><div class="row">
-  <div class="row-name">Random Excursions Variant</div>
-  <div class="bar bar-empty">not run</div>
-  <div class="row-count">—</div>
-  <div class="row-p">p=—</div>
-  <div class="badge skip">SKIP</div>
 </div>
   <footer>Generated by the randomness-testing-framework &middot; thresholds per NIST SP 800-22</footer>
 </div>

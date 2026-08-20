@@ -5,14 +5,14 @@
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 34
-		(e)             F_31 = 53
-		(f)             F_30 = 10
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 2.120265
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.346410
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -21,14 +21,14 @@ SUCCESS		p_value = 0.346410
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 30
-		(e)             F_31 = 53
-		(f)             F_30 = 14
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 0.387354
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.823924
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -37,14 +37,14 @@ SUCCESS		p_value = 0.823924
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 30
-		(e)             F_31 = 60
-		(f)             F_30 = 7
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 3.165818
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.205377
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -53,14 +53,14 @@ SUCCESS		p_value = 0.205377
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 28
-		(e)             F_31 = 54
-		(f)             F_30 = 15
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 0.393398
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.821438
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -69,14 +69,14 @@ SUCCESS		p_value = 0.821438
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 36
-		(e)             F_31 = 51
-		(f)             F_30 = 10
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 3.405408
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.182190
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -85,14 +85,14 @@ SUCCESS		p_value = 0.182190
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 28
-		(e)             F_31 = 50
-		(f)             F_30 = 19
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 3.459797
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.177302
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -101,14 +101,14 @@ SUCCESS		p_value = 0.177302
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 28
-		(e)             F_31 = 61
-		(f)             F_30 = 8
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 2.341725
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.310099
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -117,14 +117,14 @@ SUCCESS		p_value = 0.310099
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 36
-		(e)             F_31 = 51
-		(f)             F_30 = 10
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 3.405408
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.182190
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -133,14 +133,14 @@ SUCCESS		p_value = 0.182190
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 31
-		(e)             F_31 = 53
-		(f)             F_30 = 13
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 0.482053
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.785821
+FAILURE		p_value = 0.000000
 
 				RANK TEST
 		---------------------------------------------
@@ -149,12 +149,12 @@ SUCCESS		p_value = 0.785821
 		(a) Probability P_32 = 0.288788
 		(b)             P_31 = 0.577576
 		(c)             P_30 = 0.133636
-		(d) Frequency   F_32 = 31
-		(e)             F_31 = 55
-		(f)             F_30 = 11
+		(d) Frequency   F_32 = 97
+		(e)             F_31 = 0
+		(f)             F_30 = 0
 		(g) # of matrices    = 97
-		(h) Chi^2            = 0.634540
+		(h) Chi^2            = 238.886422
 		(i) NOTE: 672 BITS WERE DISCARDED.
 		---------------------------------------------
-SUCCESS		p_value = 0.728134
+FAILURE		p_value = 0.000000
 
