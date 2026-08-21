@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form id="assessment-form" action="{{ url_for('run') }}" method="post" enctype="multipart/form-data">
+  <label>Assessment input</label>
+  <fieldset class="mode-picker" aria-label="Assessment input">
+    <label class="mode-option">
+      <input type="radio" name="input_kind" value="files" {% if not selected_mode or selected_mode == "files" %}checked{% endif %}>
+      <span>Bitstream file(s)</span>
+    </label>
+    <label class="mode-option">
+      <input type="radio" name="input_kind" value="c" {% if selected_mode == "c" %}checked{% endif %}>
+      <span>C generator</span>
+    </label>
+    <label class="mode-option">
+      <input type="radio" name="input_kind" value="systemverilog" {% if selected_mode == "systemverilog" %}checked{% endif %}>
+      <span>SystemVerilog</span>
+    </label>
+  </fieldset>
+
+  <section class="source-panel" data-mode="files">
+    <label for="input_files">Input file(s)</label>
+    <input type="file" id="input_files" name="input_files" multiple required>
+    <p class="hint">One file creates a dashboard. Multiple files run in parallel and create a comparison report. Each filename becomes its generator label.</p>
+    <p id="file-count" class="hint" aria-live="polite">No files selected.</p>
+  </section>
+
+  <section class="source-panel" data-mode="c" hidden>
+    <div class="row">
+      <div>
+        <label for="c_generator_name">Generator name</label>
+        <input type="text" id="c_generator_name" name="generator_name" value="{{ selected_generator_name if selected_mode == 'c' else 'c_generator' }}" required>
+      </div>
+      <div>
+        <label for="c_output_format">Output format</label>
+        <select id="c_output_format" name="output_format">
+          <option value="ascii" {% if selected_output_format != "binary" %}selected{% endif %}>ASCII 0/1</option>
+          <option value="binary" {% if selected_output_format == "binary" %}selected{% endif %}>Packed binary</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="c_language">Language</label>
+        <select id="c_language" name="language">
+          <option value="c" {% if selected_language != "cpp" %}selected{% endif %}>C</option>
+          <option value="cpp" {% if selected_language == "cpp" %}selected{% endif %}>C++</option>
+        </select>
+      </div>
+      <div>
+        <label for="c_library">Library</label>
+        <select id="c_library" name="library">
+          <option value="none" {% if not selected_library %}selected{% endif %}>None</option>
+          {% for lib in library_examples %}
+          <option value="{{ lib.id }}" {% if selected_library == lib.id %}selected{% endif %}>{{ lib.title }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint">Selecting a library loads its example source and switches Language to C++. See the <a href="{{ url_for('examples') }}">Examples tab</a> to browse and add your own.</p>
+      </div>
+    </div>
+
+    <label for="c_file">Load a .c/.cpp file</label>
+    <input type="file" id="c_file" name="c_file" accept=".c,.cpp,.cc,text/x-c,text/x-c++">
+
+    <div class="editor-heading">
+      <label id="c-editor-label" for="c_source">C/C++ source</label>
+      <span class="language-badge">C / C++</span>
+    </div>
+    <div id="c-editor" class="code-editor" role="region" aria-labelledby="c-editor-label" hidden></div>
+    <textarea id="c_source" class="source-textarea" name="c_source" spellcheck="false" required>{{ c_template }}</textarea>
+    <p class="hint contract">Built with the standard C/C++ library (plus <code>libm</code>, or the selected library's flags). Contract: <code>generator OUTPUT_PATH REQUESTED_BITS</code>. Write the selected encoding to <code>OUTPUT_PATH</code>; stdout/stderr may contain diagnostics.</p>
+    <p class="trust-warning">Submitted source executes on this host. Use trusted local code only.</p>
+  </section>
+
+  <section class="source-panel" data-mode="systemverilog" hidden>
+    <div class="row">
+      <div>
+        <label for="sv_generator_name">Generator name</label>
+        <input type="text" id="sv_generator_name" name="generator_name" value="{{ selected_generator_name if selected_mode == 'systemverilog' else 'sv_generator' }}" required>
+      </div>
+      <div>
+        <label for="sv_top_module">Testbench top module</label>
+        <input type="text" id="sv_top_module" name="top_module" value="tb" required>
+      </div>
+    </div>
+
+    <label for="sv_output_format">Output format</label>
+    <select id="sv_output_format" name="output_format">
+      <option value="ascii">ASCII 0/1</option>
+      <option value="binary">Packed binary</option>
+    </select>
+
+    <label for="sv_core_file">Load core .sv file</label>
+    <input type="file" id="sv_core_file" name="sv_core_file" accept=".sv,.v,text/x-systemverilog">
+    <div class="editor-heading">
+      <label id="sv-core-editor-label" for="sv_core_source">Core source</label>
+      <span class="language-badge">SystemVerilog</span>
+    </div>
+    <div id="sv-core-editor" class="code-editor" role="region" aria-labelledby="sv-core-editor-label" hidden></div>
+    <textarea id="sv_core_source" class="source-textarea" name="sv_core_source" spellcheck="false" required>{{ sv_core_template }}</textarea>
+
+    <label for="sv_tb_file">Load testbench .sv file</label>
+    <input type="file" id="sv_tb_file" name="sv_tb_file" accept=".sv,.v,text/x-systemverilog">
+    <div class="editor-heading">
+      <label id="sv-tb-editor-label" for="sv_tb_source">Testbench source</label>
+      <span class="language-badge">SystemVerilog</span>
+    </div>
+    <div id="sv-tb-editor" class="code-editor" role="region" aria-labelledby="sv-tb-editor-label" hidden></div>
+    <textarea id="sv_tb_source" class="source-textarea" name="sv_tb_source" spellcheck="false" required>{{ sv_tb_template }}</textarea>
+
+    <p class="hint contract">Verilator builds both files. The top testbench receives <code>+OUTPUT=&lt;path&gt;</code> and <code>+BITS=&lt;count&gt;</code>; it must write the selected encoding and call <code>$finish</code>.</p>
+    <p class="trust-warning">Submitted simulation code executes on this host. Use trusted local code only.</p>
+  </section>
+
+  <div class="row">
+    <div>
+      <label for="stream_length">Stream length (bits)</label>
+      <input type="number" id="stream_length" name="stream_length" value="100000" min="100" required>
+    </div>
+    <div>
+      <label for="number_of_streams">Number of streams</label>
+      <input type="number" id="number_of_streams" name="number_of_streams" value="10" min="1" required>
+    </div>
+  </div>
+
+  <label for="cores">CPU cores for batch runs</label>
+  <input type="number" id="cores" name="cores" value="{{ default_cores }}" min="1" max="{{ cpu_count }}">
+  <p class="hint">This machine has {{ cpu_count }} CPU core{% if cpu_count != 1 %}s{% endif %}. This setting applies only when several bitstream files are selected.</p>
+
+  <details class="advanced">
+    <summary>Advanced: tests and block lengths</summary>
+    <p class="hint advanced-intro">Unchecked tests are skipped. Block lengths apply only to tests that use them; the values shown are the STS defaults.</p>
+    <p class="advanced-label">Tests to run</p>
+    <div class="test-grid">
+      {% for name, label in test_labels.items() %}
+      <label class="check"><input type="checkbox" name="enable_{{ name }}" checked> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <p class="advanced-label">Block lengths</p>
+    <div class="param-grid">
+      {% for name, default in param_defaults.items() %}
+      <div>
+        <label for="param_{{ name }}">{{ test_labels[name] }} &mdash; block length</label>
+        <input type="number" id="param_{{ name }}" name="param_{{ name }}" value="{{ default }}" min="1">
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+
+  <button type="submit">Run assessment</button>
+</form>
+
+<script type="application/json" id="library-examples-data">{{ library_examples_json | safe }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='vendor/ace/ace.js') }}" data-ace-base="{{ url_for('static', filename='vendor/ace') }}"></script>
+<script defer src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

@@ -8,14 +8,27 @@
     }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "containerEnv": {
+    "SPUR_HOST": "0.0.0.0",
+    "SPUR_PORT": "5000"
+  },
+  "forwardPorts": [5000],
+  "portsAttributes": {
+    "5000": {
+      "label": "SPUR NIST Web UI",
+      "onAutoForward": "notify"
+    }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
-        "ms-python.vscode-pylance"
+        "ms-python.vscode-pylance",
+        "ms-vscode.cpptools",
+        "mshr-h.VerilogHDL"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
         "files.exclude": {
           "**/__pycache__": true,
           "**/*.pyc": true

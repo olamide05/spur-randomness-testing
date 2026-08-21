@@ -45,6 +45,8 @@ class BatchReporter:
                 t = self._get_test_result(summary, test_name)
                 if t and t.total > 0:
                     status = f"{t.passed}/{t.total}"
+                    if t.flagged:
+                        status += "*"
                 elif t:
                     status = "SKIP"
                 else:
@@ -71,7 +73,8 @@ class BatchReporter:
                         "passed": t.passed,
                         "total": t.total,
                         "p_value": t.p_value,
-                        "proportion": t.proportion
+                        "proportion": t.proportion,
+                        "flagged": t.flagged
                     }
                     for t in summary.tests
                 ]
@@ -103,11 +106,14 @@ class BatchReporter:
                 if t and t.total > 0:
                     cls = "pass" if t.status == "pass" else "fail"
                     text = f"{t.passed}/{t.total}"
+                    if t.flagged:
+                        text += " *"
                 elif t:
                     cls, text = "skip", "SKIP"
                 else:
                     cls, text = "skip", "\u2014"
-                cells += f'<td class="{cls}"><span class="dot"></span>{text}</td>'
+                title_attr = ' title="Flagged by STS as non-uniform"' if (t and t.flagged) else ""
+                cells += f'<td class="{cls}"{title_attr}><span class="dot"></span>{text}</td>'
 
             rows.append(
                 f'<tr><td class="gen">{html.escape(str(summary.generator))}</td>'
@@ -121,7 +127,8 @@ class BatchReporter:
             evaluated = [test for test in summary.tests if test.total > 0]
             passed = sum(1 for test in evaluated if test.status == "pass")
             test_rows = "".join(
-                f"<li><span>{html.escape(test.name.replace(chr(95), chr(32)).title())}</span><b>{html.escape(test.status.upper())} · {test.passed}/{test.total}</b></li>"
+                f"<li><span>{html.escape(test.name.replace(chr(95), chr(32)).title())}</span>"
+                f"<b>{html.escape(test.status.upper())}{' *' if test.flagged else ''} · {test.passed}/{test.total}</b></li>"
                 for test in summary.tests
             )
             cards.append(

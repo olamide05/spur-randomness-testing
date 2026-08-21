@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p class="hint">
+  Browse ready-to-run example generators. "Load in editor" takes you to the assessment
+  form with that example's source pre-filled so you can review, tweak, and run it.
+  A library example only appears here once its library is actually installed on this
+  host (detected via <code>pkg-config</code>) — see <code>src/generators/examples.py</code>
+  for how to add your own.
+</p>
+
+<h2>C / C++ crypto libraries</h2>
+{% if library_examples %}
+<div class="example-grid">
+  {% for example in library_examples %}
+  <section class="example-card">
+    <h2>{{ example.title }}</h2>
+    <p>{{ example.description }}</p>
+    <div class="example-actions">
+      <a class="load-example" href="{{ url_for('index', example=example.id) }}">Load in editor &rarr;</a>
+    </div>
+    <details>
+      <summary class="hint">View source</summary>
+      <pre>{{ example.source }}</pre>
+    </details>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-note">No library examples are available on this host yet. Install a supported library's dev package (e.g. <code>apt-get install libsodium-dev</code>) and reload this page.</p>
+{% endif %}
+
+<h2>SystemVerilog PRNGs</h2>
+<div class="example-grid">
+  {% for example in sv_examples %}
+  <section class="example-card">
+    <h2>{{ example.title }}</h2>
+    <p>{{ example.description }}</p>
+    <div class="example-actions">
+      <a class="load-example" href="{{ url_for('index', example=example.id) }}">Load in editor &rarr;</a>
+    </div>
+    <details>
+      <summary class="hint">View source</summary>
+      <pre>{{ example.core_source }}</pre>
+    </details>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

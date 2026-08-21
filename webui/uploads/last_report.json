@@ -1,15 +1,15 @@
 {
-  "generator": "takum_log16_coupled_lfsr 1",
+  "generator": "sv_generator",
   "overall_status": "fail",
-  "experiment_directory": "experiments/takum_log16_coupled_lfsr 1_20260820_152158",
+  "experiment_directory": "experiments/bitstream_20260820_212228",
   "tests": [
     {
       "name": "frequency",
       "status": "pass",
-      "passed": 9,
+      "passed": 10,
       "total": 10,
-      "p_value": 0.350485,
-      "proportion": 0.9
+      "p_value": 0.035174,
+      "proportion": 1.0
     },
     {
       "name": "block_frequency",
@@ -21,11 +21,11 @@
     },
     {
       "name": "cumulative_sums",
-      "status": "fail",
-      "passed": 18,
+      "status": "pass",
+      "passed": 20,
       "total": 20,
-      "p_value": 0.350485,
-      "proportion": 0.9
+      "p_value": 0.213309,
+      "proportion": 1.0
     },
     {
       "name": "runs",
@@ -40,39 +40,39 @@
       "status": "pass",
       "passed": 10,
       "total": 10,
-      "p_value": 0.534146,
+      "p_value": 0.350485,
       "proportion": 1.0
     },
     {
       "name": "rank",
-      "status": "pass",
-      "passed": 10,
+      "status": "fail",
+      "passed": 0,
       "total": 10,
-      "p_value": 0.213309,
-      "proportion": 1.0
+      "p_value": 0.0,
+      "proportion": 0.0
     },
     {
       "name": "fft",
       "status": "pass",
       "passed": 10,
       "total": 10,
-      "p_value": 0.534146,
+      "p_value": 0.911413,
       "proportion": 1.0
     },
     {
       "name": "non_overlapping_template",
       "status": "pass",
-      "passed": 1458,
+      "passed": 1464,
       "total": 1480,
       "p_value": 0.350485,
-      "proportion": 0.9851351351351352
+      "proportion": 0.9891891891891892
     },
     {
       "name": "overlapping_template",
       "status": "pass",
       "passed": 10,
       "total": 10,
-      "p_value": 0.350485,
+      "p_value": 0.739918,
       "proportion": 1.0
     },
     {
@@ -88,40 +88,40 @@
       "status": "pass",
       "passed": 10,
       "total": 10,
-      "p_value": 0.911413,
+      "p_value": 0.534146,
       "proportion": 1.0
     },
     {
       "name": "random_excursions",
-      "status": "skipped",
-      "passed": 0,
-      "total": 0,
+      "status": "pass",
+      "passed": 24,
+      "total": 24,
       "p_value": null,
-      "proportion": null
+      "proportion": 1.0
     },
     {
       "name": "random_excursions_variant",
-      "status": "skipped",
-      "passed": 0,
-      "total": 0,
+      "status": "pass",
+      "passed": 54,
+      "total": 54,
       "p_value": null,
-      "proportion": null
+      "proportion": 1.0
     },
     {
       "name": "serial",
       "status": "pass",
       "passed": 20,
       "total": 20,
-      "p_value": 0.739918,
+      "p_value": 0.911413,
       "proportion": 1.0
     },
     {
       "name": "linear_complexity",
-      "status": "pass",
-      "passed": 10,
+      "status": "fail",
+      "passed": 0,
       "total": 10,
-      "p_value": 0.350485,
-      "proportion": 1.0
+      "p_value": 0.0,
+      "proportion": 0.0
     }
   ]
 }

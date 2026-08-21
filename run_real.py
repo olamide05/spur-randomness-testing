@@ -4,10 +4,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+from types import SimpleNamespace
+
 from src.config.sts_config import STSConfig
 from src.automation.nist_runner import NISTRunner
 from src.parser.result_parser import ResultParser
 from src.exporters import export_json, export_csv, export_latex, export_html
+from src.core.archive_writer import archive_run
 
 
 def main():
@@ -45,8 +48,22 @@ def main():
     exp_dir = runner.run()
     print(f"Done. Results: {exp_dir.resolve()}")
 
-    parser = ResultParser(exp_dir, generator=config.generator)
+    parser = ResultParser(exp_dir, generator=config.generator, number_of_streams=config.number_of_streams)
     summary = parser.parse()
+
+    archive_run(
+        "upload",
+        generator=config.generator,
+        experiment_dir=exp_dir,
+        summary=summary,
+        run_config=SimpleNamespace(
+            stream_length=config.stream_length,
+            number_of_streams=config.number_of_streams,
+            tests=config.tests,
+        ),
+        bitstream_path=config.input_file,
+        original_filename=config.input_file.name,
+    )
 
     status_icon = "PASS" if summary.overall_status == "pass" else "FAIL"
     print(f"\nOverall: {status_icon}")
