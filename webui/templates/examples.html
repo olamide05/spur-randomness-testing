@@ -2,17 +2,22 @@
 
 {% block content %}
 <p class="hint">
-  Browse ready-to-run example generators. "Load in editor" takes you to the assessment
-  form with that example's source pre-filled so you can review, tweak, and run it.
-  A library example only appears here once its library is actually installed on this
-  host (detected via <code>pkg-config</code>) — see <code>src/generators/examples.py</code>
-  for how to add your own.
+  Browse ready-to-run C++ and SystemVerilog generators. "Load in editor" opens
+  the assessment form with the source pre-filled. Built-in arithmetic and chaos
+  examples are always available; external crypto examples are detected with
+  <code>pkg-config</code>.
+</p>
+<p class="hint">
+  <strong>Research note:</strong> passing NIST STS does not make a generator
+  cryptographically secure. In particular, finite-precision chaos maps are
+  deterministic finite-state machines and may develop short cycles.
 </p>
 
-<h2>C / C++ crypto libraries</h2>
-{% if library_examples %}
+<h2>C / C++ generators</h2>
+{% for family, examples in library_examples | groupby("family") %}
+<h3>{{ family }}</h3>
 <div class="example-grid">
-  {% for example in library_examples %}
+  {% for example in examples %}
   <section class="example-card">
     <h2>{{ example.title }}</h2>
     <p>{{ example.description }}</p>
@@ -26,13 +31,13 @@
   </section>
   {% endfor %}
 </div>
-{% else %}
-<p class="empty-note">No library examples are available on this host yet. Install a supported library's dev package (e.g. <code>apt-get install libsodium-dev</code>) and reload this page.</p>
-{% endif %}
+{% endfor %}
 
-<h2>SystemVerilog PRNGs</h2>
+<h2>SystemVerilog generators</h2>
+{% for family, examples in sv_examples | groupby("family") %}
+<h3>{{ family }}</h3>
 <div class="example-grid">
-  {% for example in sv_examples %}
+  {% for example in examples %}
   <section class="example-card">
     <h2>{{ example.title }}</h2>
     <p>{{ example.description }}</p>
@@ -46,4 +51,5 @@
   </section>
   {% endfor %}
 </div>
+{% endfor %}
 {% endblock %}

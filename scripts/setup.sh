@@ -29,6 +29,8 @@ if [ "${1:-}" != "--skip-system" ]; then
         curl \
         gcc \
         libssl-dev \
+        libsodium-dev \
+        pkg-config \
         make \
         python3 \
         python3-pip \

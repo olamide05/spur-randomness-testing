@@ -38,12 +38,13 @@ C_TEMPLATE = r'''#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * Contract: generator OUTPUT_PATH REQUESTED_BITS
- * Write ASCII 0/1 characters to OUTPUT_PATH. The standard C library and
- * libm are available. Select "packed binary" in the UI if you use fwrite()
- * to emit bytes instead.
+ * Write packed binary to OUTPUT_PATH. The standard C library and libm are
+ * available. The final byte is zero-padded when REQUESTED_BITS is not a
+ * multiple of eight.
  */
 static uint32_t xorshift32(uint32_t *state) {
     uint32_t x = *state;
@@ -75,23 +76,42 @@ int main(int argc, char **argv) {
     }
 
     uint32_t state = UINT32_C(0x6d2b79f5);
-    for (unsigned long long i = 0; i < requested_bits; ++i) {
-        int bit = (int)(xorshift32(&state) & 1U);
-        if (fputc('0' + bit, output) == EOF) {
+    const char *format = getenv("SPUR_OUTPUT_FORMAT");
+    if (format && strcmp(format, "ascii") == 0) {
+        for (unsigned long long i = 0; i < requested_bits; ++i) {
+            if (fputc('0' + (int)(xorshift32(&state) & 1U), output) == EOF) {
+                perror("fputc");
+                fclose(output);
+                return 1;
+            }
+            if ((i + 1U) % 64U == 0U)
+                fputc('\n', output);
+        }
+        return fclose(output) == 0 ? 0 : 1;
+    }
+
+    const unsigned long long requested_bytes = (requested_bits + 7U) / 8U;
+    uint32_t word = 0;
+    unsigned available = 0;
+    for (unsigned long long i = 0; i < requested_bytes; ++i) {
+        if (available == 0) {
+            word = xorshift32(&state);
+            available = 4;
+        }
+        uint8_t output_byte = (uint8_t)((word >> 24) & 0xffU);
+        const unsigned trailing_bits = (unsigned)(requested_bits & 7U);
+        if (trailing_bits != 0 && i + 1U == requested_bytes)
+            output_byte &= (uint8_t)(0xffU << (8U - trailing_bits));
+        if (fputc((int)output_byte, output) == EOF) {
             perror("fputc");
             fclose(output);
             return 1;
         }
-        if ((i + 1U) % 64U == 0U) {
-            fputc('\n', output);
-        }
+        word <<= 8;
+        --available;
     }
 
-    if (fclose(output) != 0) {
-        perror("fclose");
-        return 1;
-    }
-    return 0;
+    return fclose(output) == 0 ? 0 : 1;
 }
 '''
 
@@ -115,25 +135,46 @@ SV_TB_TEMPLATE = r'''module tb;
   rng_core dut();
 
   string output_path;
+  string output_format;
   longint unsigned requested_bits;
   integer output_file;
   logic value;
+  logic [7:0] packed_byte;
+  int unsigned bits_in_byte;
 
   initial begin
     if (!$value$plusargs("OUTPUT=%s", output_path))
       $fatal(1, "missing +OUTPUT=<path>");
     if (!$value$plusargs("BITS=%d", requested_bits))
       $fatal(1, "missing +BITS=<count>");
+    if (!$value$plusargs("FORMAT=%s", output_format))
+      output_format = "binary";
 
     output_file = $fopen(output_path, "wb");
     if (output_file == 0)
       $fatal(1, "could not open output file");
 
+    packed_byte = 0;
+    bits_in_byte = 0;
     for (longint unsigned i = 0; i < requested_bits; i++) begin
       dut.next_bit(value);
-      $fwrite(output_file, "%0d", value);
-      if ((i + 1) % 64 == 0)
-        $fwrite(output_file, "\n");
+      if (output_format == "ascii") begin
+        $fwrite(output_file, "%0d", value);
+        if ((i + 1) % 64 == 0)
+          $fwrite(output_file, "\n");
+      end else begin
+        packed_byte = {packed_byte[6:0], value};
+        bits_in_byte = bits_in_byte + 1;
+        if (bits_in_byte == 8) begin
+          $fwrite(output_file, "%c", packed_byte);
+          packed_byte = 0;
+          bits_in_byte = 0;
+        end
+      end
+    end
+    if (output_format != "ascii" && bits_in_byte != 0) begin
+      packed_byte = packed_byte << (8 - bits_in_byte);
+      $fwrite(output_file, "%c", packed_byte);
     end
 
     $fclose(output_file);
@@ -340,7 +381,7 @@ def generate_from_c(
     destination: Path,
     requested_bits: int,
     *,
-    output_format: str = "ascii",
+    output_format: str = "binary",
     compiler: Optional[str] = None,
 ) -> GeneratedBitstream:
     """Compile a C11 program and execute it using the generator contract."""
@@ -368,12 +409,15 @@ def generate_from_c(
             stdout_path=compile_stdout,
             stderr_path=compile_stderr,
         )
+        run_env = os.environ.copy()
+        run_env["SPUR_OUTPUT_FORMAT"] = output_format
         _run_logged(
             [str(executable), str(generated_path), str(requested_bits)],
             cwd=work_dir,
             timeout=RUN_TIMEOUT_SECONDS,
             stdout_path=run_stdout,
             stderr_path=run_stderr,
+            env=run_env,
         )
         return _promote_output(
             generated_path, run_stdout, destination, requested_bits, output_format
@@ -385,7 +429,7 @@ def generate_from_cpp(
     destination: Path,
     requested_bits: int,
     *,
-    output_format: str = "ascii",
+    output_format: str = "binary",
     compiler: Optional[str] = None,
     std: str = "c++17",
     extra_flags: Sequence[str] = (),
@@ -421,12 +465,15 @@ def generate_from_cpp(
             stdout_path=compile_stdout,
             stderr_path=compile_stderr,
         )
+        run_env = os.environ.copy()
+        run_env["SPUR_OUTPUT_FORMAT"] = output_format
         _run_logged(
             [str(executable), str(generated_path), str(requested_bits)],
             cwd=work_dir,
             timeout=RUN_TIMEOUT_SECONDS,
             stdout_path=run_stdout,
             stderr_path=run_stderr,
+            env=run_env,
         )
         return _promote_output(
             generated_path, run_stdout, destination, requested_bits, output_format
@@ -483,7 +530,7 @@ def generate_from_systemverilog(
     destination: Path,
     requested_bits: int,
     *,
-    output_format: str = "ascii",
+    output_format: str = "binary",
     verilator: Optional[str] = None,
     binary_destination: Optional[Path] = None,
 ) -> GeneratedBitstream:
@@ -555,7 +602,12 @@ def generate_from_systemverilog(
             env=env,
         )
         _run_logged(
-            [str(executable), f"+OUTPUT={generated_path}", f"+BITS={requested_bits}"],
+            [
+                str(executable),
+                f"+OUTPUT={generated_path}",
+                f"+BITS={requested_bits}",
+                f"+FORMAT={output_format}",
+            ],
             cwd=work_dir,
             timeout=RUN_TIMEOUT_SECONDS,
             stdout_path=run_stdout,

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Report History &mdash; Spur{% endblock %}
+{% block body_class %}history-page{% endblock %}
+
+{% block head %}
+{% if active_runs %}<meta http-equiv="refresh" content="3">{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="history-shell">
+  <section class="active-runs" aria-labelledby="active-runs-title">
+    <div class="active-runs-heading">
+      <div>
+        <p class="eyebrow">Live activity</p>
+        <h2 id="active-runs-title"><span class="activity-dot" aria-hidden="true"></span>Currently running</h2>
+      </div>
+      <span class="history-count">{{ active_runs | length }} active</span>
+    </div>
+
+    {% if active_runs %}
+    <div class="history-list">
+      {% for run in active_runs %}
+      <article class="history-card active-run-card">
+        <div class="active-progress" aria-hidden="true"><span></span></div>
+        <div class="history-card-main">
+          <div class="history-card-title">
+            <h3>{{ run.generators | join(", ") if run.generators else "Assessment" }}</h3>
+            <span class="status-pill status-running">running</span>
+          </div>
+          <p class="history-meta">
+            <span>{{ run.phase }}</span>
+            <span>{{ run.input_kind | replace("_", " ") | title }}</span>
+            <span>{{ run.instance_count }} instance{% if run.instance_count != 1 %}s{% endif %}</span>
+            <span>started <time datetime="{{ run.started.isoformat() }}">{{ run.started.strftime("%H:%M:%S") }}</time></span>
+          </p>
+          <div class="execution-timers">
+            <div class="execution-timer timer-total">
+              <span class="timer-label">Total execution</span>
+              <time class="execution-clock" data-started-at="{{ run.started_at }}">00:00:00</time>
+            </div>
+            {% for stage in run.stages %}
+            <div class="execution-timer stage-{{ stage.state }}">
+              <span class="timer-state" aria-hidden="true"></span>
+              <span class="timer-label">{{ stage.label }}</span>
+              <time
+                class="execution-clock"
+                data-started-at="{{ stage.started_at if stage.started_at is not none else '' }}"
+                data-finished-at="{{ stage.finished_at if stage.finished_at is not none else '' }}"
+              >00:00:00</time>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <span class="live-label"><span class="activity-dot" aria-hidden="true"></span>Processing</span>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="active-empty">No assessments are running right now.</p>
+    {% endif %}
+  </section>
+
+  <div class="history-heading">
+    <div>
+      <p class="eyebrow">Saved assessments</p>
+      <h2>Report history</h2>
+      <p class="hint">Completed WebUI reports are shown newest first. Open the rendered dashboard or download its machine-readable artifacts.</p>
+    </div>
+    <span class="history-count">{{ reports | length }} report{% if reports | length != 1 %}s{% endif %}</span>
+  </div>
+
+  {% if reports %}
+  <div class="history-list">
+    {% for report in reports %}
+    <article class="history-card">
+      <div class="history-card-main">
+        <div class="history-card-title">
+          <h3>{{ report.generator }}</h3>
+          <span class="status-pill status-{{ report.status }}">{{ report.status }}</span>
+        </div>
+        <p class="history-meta">
+          <time datetime="{{ report.created.isoformat() }}">{{ report.created.strftime("%Y-%m-%d %H:%M:%S") }}</time>
+          {% if report.completed_tests %}
+          <span>{{ report.passed_tests }}/{{ report.completed_tests }} completed tests passed</span>
+          {% endif %}
+          <span class="run-id" title="{{ report.id }}">{{ report.id[:8] }}</span>
+        </p>
+      </div>
+      <div class="history-actions">
+        <a class="primary-link" href="{{ url_for('report_artifact', run_id=report.id, artifact='html') }}">View report</a>
+        {% for download in report.downloads %}
+        <a href="{{ url_for('report_artifact', run_id=report.id, artifact=download.key) }}">{{ download.label }}</a>
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="history-empty">
+    <h3>No reports yet</h3>
+    <p>Run an assessment and its rendered report will appear here.</p>
+    <a class="primary-link" href="{{ url_for('index') }}">Run an assessment</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='history.js') }}"></script>
+{% endblock %}

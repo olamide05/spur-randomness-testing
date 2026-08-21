@@ -13,15 +13,30 @@ from src.generators.source_runner import (
 )
 
 
-def test_c_template_generates_valid_ascii_stream(tmp_path):
-    destination = tmp_path / "c-stream.txt"
+def test_c_template_generates_exact_packed_stream(tmp_path):
+    destination = tmp_path / "c-stream.bin"
 
     result = generate_from_c(C_TEMPLATE, destination, 257)
 
     assert result.path == destination
+    assert result.input_mode == 1
+    assert result.bit_count == 264
+    assert destination.stat().st_size == 33
+    assert destination.read_bytes()[-1] & 0x7f == 0
+
+
+def test_c_template_still_supports_ascii_selection(tmp_path):
+    destination = tmp_path / "c-stream.txt"
+
+    result = generate_from_c(
+        C_TEMPLATE, destination, 257, output_format="ascii"
+    )
+
+    bits = "".join(destination.read_text().split())
     assert result.input_mode == 0
     assert result.bit_count == 257
-    assert set(destination.read_text().replace("\n", "")) <= {"0", "1"}
+    assert len(bits) == 257
+    assert set(bits) <= {"0", "1"}
 
 
 def test_c_stdout_is_supported_as_a_fallback(tmp_path):
@@ -37,7 +52,7 @@ int main(int argc, char **argv) {
 '''
     destination = tmp_path / "stdout-stream.txt"
 
-    result = generate_from_c(source, destination, 64)
+    result = generate_from_c(source, destination, 64, output_format="ascii")
 
     assert result.bit_count == 64
     assert destination.read_text() == "01" * 32
@@ -54,7 +69,9 @@ int main(int argc, char **argv) {
 }
 '''
     with pytest.raises(GenerationError, match="only 0, 1, and whitespace"):
-        generate_from_c(source, tmp_path / "bad.txt", 4)
+        generate_from_c(
+            source, tmp_path / "bad.txt", 4, output_format="ascii"
+        )
 
 
 def test_c_generator_accepts_packed_binary(tmp_path):
@@ -87,8 +104,8 @@ LOCAL_VERILATOR = Path(__file__).parents[1] / ".tools" / "verilator" / "usr" / "
     shutil.which("verilator") is None and not LOCAL_VERILATOR.is_file(),
     reason="Verilator is not installed",
 )
-def test_systemverilog_templates_generate_valid_ascii_stream(tmp_path):
-    destination = tmp_path / "sv-stream.txt"
+def test_systemverilog_templates_generate_exact_packed_stream(tmp_path):
+    destination = tmp_path / "sv-stream.bin"
 
     result = generate_from_systemverilog(
         SV_CORE_TEMPLATE,
@@ -99,6 +116,30 @@ def test_systemverilog_templates_generate_valid_ascii_stream(tmp_path):
     )
 
     assert result.path == destination
+    assert result.input_mode == 1
+    assert result.bit_count == 264
+    assert destination.stat().st_size == 33
+    assert destination.read_bytes()[-1] & 0x7f == 0
+
+
+@pytest.mark.skipif(
+    shutil.which("verilator") is None and not LOCAL_VERILATOR.is_file(),
+    reason="Verilator is not installed",
+)
+def test_systemverilog_template_still_supports_ascii_selection(tmp_path):
+    destination = tmp_path / "sv-stream.txt"
+
+    result = generate_from_systemverilog(
+        SV_CORE_TEMPLATE,
+        SV_TB_TEMPLATE,
+        "tb",
+        destination,
+        257,
+        output_format="ascii",
+    )
+
+    bits = "".join(destination.read_text().split())
     assert result.input_mode == 0
     assert result.bit_count == 257
-    assert set(destination.read_text().replace("\n", "")) <= {"0", "1"}
+    assert len(bits) == 257
+    assert set(bits) <= {"0", "1"}

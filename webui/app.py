@@ -13,16 +13,28 @@ from __future__ import annotations
 
 import json
 import multiprocessing
+import re
 import os
 import shutil
 import sys
 import tempfile
+import time
 import traceback
 import uuid
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
-from flask import Flask, Response, make_response, render_template, request
+from flask import (
+    Flask,
+    Response,
+    abort,
+    after_this_request,
+    make_response,
+    render_template,
+    request,
+    send_file,
+)
 from werkzeug.utils import secure_filename
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -54,7 +66,16 @@ UPLOAD_DIR = REPO_ROOT / "webui" / "uploads"
 INPUT_UPLOAD_DIR = UPLOAD_DIR / "inputs"
 GENERATED_DIR = UPLOAD_DIR / "generated"
 REPORT_DIR = UPLOAD_DIR / "reports"
-for directory in (UPLOAD_DIR, INPUT_UPLOAD_DIR, GENERATED_DIR, REPORT_DIR):
+ACTIVE_DIR = UPLOAD_DIR / "active"
+REPORT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
+REPORT_DOWNLOADS = {
+    "json": ("report.json", "JSON"),
+    "csv": ("report.csv", "CSV"),
+    "latex": ("report.tex", "LaTeX"),
+}
+for directory in (
+    UPLOAD_DIR, INPUT_UPLOAD_DIR, GENERATED_DIR, REPORT_DIR, ACTIVE_DIR
+):
     directory.mkdir(parents=True, exist_ok=True)
 
 CPU_COUNT = multiprocessing.cpu_count()
@@ -255,8 +276,8 @@ def _error_page(message: str) -> Response:
 
 def _parse_run_settings():
     try:
-        stream_length = int(request.form.get("stream_length", 100000))
-        number_of_streams = int(request.form.get("number_of_streams", 10))
+        stream_length = int(request.form.get("stream_length", 1000000))
+        number_of_streams = int(request.form.get("number_of_streams", 100))
         cores = max(1, int(request.form.get("cores", 1)))
     except ValueError as exc:
         raise GenerationError(
@@ -328,7 +349,7 @@ def _c_job(stream_length: int, streams: int, tests: dict) -> tuple:
     generator = _safe_generator_name(
         request.form.get("generator_name", ""), "c_generator"
     )
-    output_format = request.form.get("output_format", "ascii")
+    output_format = request.form.get("output_format", "binary")
     language = request.form.get("language", "c")
     library_id = request.form.get("library", "none")
 
@@ -389,7 +410,7 @@ def _systemverilog_job(stream_length: int, streams: int, tests: dict) -> tuple:
         request.form.get("generator_name", ""), "sv_generator"
     )
     top_module = request.form.get("top_module", "tb").strip()
-    output_format = request.form.get("output_format", "ascii")
+    output_format = request.form.get("output_format", "binary")
     artifact_dir = GENERATED_DIR / uuid.uuid4().hex
     artifact_dir.mkdir(parents=True)
     (artifact_dir / "core.sv").write_text(core_source, encoding="utf-8")
@@ -434,11 +455,210 @@ def examples():
     return render_template("examples.html", **_template_context())
 
 
+def _write_active_run(record: dict) -> None:
+    """Atomically publish one active assessment for concurrent History reads."""
+    record["updated_at"] = time.time()
+    destination = ACTIVE_DIR / f"{record['id']}.json"
+    temporary = ACTIVE_DIR / f".{record['id']}.tmp"
+    temporary.write_text(json.dumps(record))
+    os.replace(temporary, destination)
+
+
+def _remove_active_run(run_id: str) -> None:
+    try:
+        (ACTIVE_DIR / f"{run_id}.json").unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _active_runs() -> list[dict]:
+    """Read live assessments; ignore malformed or abandoned tracker files."""
+    now = time.time()
+    entries = []
+    for path in ACTIVE_DIR.glob("*.json"):
+        try:
+            record = json.loads(path.read_text())
+            started_at = float(record["started_at"])
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if now - float(record.get("updated_at", started_at)) > 12 * 60 * 60:
+            continue
+        record["started"] = datetime.fromtimestamp(started_at)
+        record["elapsed_seconds"] = max(0, int(now - started_at))
+        for stage in record.get("stages", []):
+            stage_started = stage.get("started_at")
+            stage_finished = stage.get("finished_at")
+            if stage_started is None:
+                stage["state"] = "waiting"
+                stage["elapsed_seconds"] = 0
+            else:
+                stage_started = float(stage_started)
+                stage["state"] = "complete" if stage_finished is not None else "running"
+                stage_end = float(stage_finished) if stage_finished is not None else now
+                stage["elapsed_seconds"] = max(0, int(stage_end - stage_started))
+        entries.append(record)
+    return sorted(entries, key=lambda entry: entry["started_at"])
+
+
+def _history_entries() -> list[dict]:
+    """Return completed WebUI reports newest first, tolerating partial runs."""
+    entries = []
+    for run_dir in REPORT_DIR.iterdir():
+        if not run_dir.is_dir() or not REPORT_ID_RE.fullmatch(run_dir.name):
+            continue
+
+        html_path = next(
+            (
+                candidate
+                for candidate in (
+                    run_dir / "dashboard.html",
+                    run_dir / "comparison.html",
+                )
+                if candidate.is_file()
+            ),
+            None,
+        )
+        if html_path is None:
+            continue
+
+        metadata = {}
+        json_path = run_dir / "report.json"
+        if json_path.is_file():
+            try:
+                metadata = json.loads(json_path.read_text())
+            except (OSError, ValueError):
+                metadata = {}
+
+        tests = metadata.get("tests", [])
+        completed_tests = [
+            test for test in tests if test.get("status") != "skipped"
+        ]
+        passed_tests = sum(
+            test.get("status") == "pass" for test in completed_tests
+        )
+        modified = html_path.stat().st_mtime
+        status = str(
+            metadata.get("overall_status")
+            or ("comparison" if html_path.name == "comparison.html" else "complete")
+        ).lower()
+        if status not in {"pass", "fail", "comparison", "complete"}:
+            status = "complete"
+        entries.append(
+            {
+                "id": run_dir.name,
+                "generator": metadata.get("generator") or "Batch comparison",
+                "status": status,
+                "created": datetime.fromtimestamp(modified),
+                "passed_tests": passed_tests,
+                "completed_tests": len(completed_tests),
+                "downloads": [
+                    {"key": key, "label": label}
+                    for key, (filename, label) in REPORT_DOWNLOADS.items()
+                    if (run_dir / filename).is_file()
+                ],
+            }
+        )
+
+    return sorted(entries, key=lambda entry: entry["created"], reverse=True)
+
+
+@app.get("/history")
+def history():
+    return render_template(
+        "history.html",
+        active_runs=_active_runs(),
+        reports=_history_entries(),
+    )
+
+
+def _report_artifact_path(run_id: str, artifact: str) -> Path:
+    if not REPORT_ID_RE.fullmatch(run_id):
+        abort(404)
+
+    run_dir = REPORT_DIR / run_id
+    if artifact == "html":
+        for filename in ("dashboard.html", "comparison.html"):
+            path = run_dir / filename
+            if path.is_file():
+                return path
+        abort(404)
+
+    download = REPORT_DOWNLOADS.get(artifact)
+    if download is None:
+        abort(404)
+    path = run_dir / download[0]
+    if not path.is_file():
+        abort(404)
+    return path
+
+
+@app.get("/history/<run_id>/<artifact>")
+def report_artifact(run_id: str, artifact: str):
+    path = _report_artifact_path(run_id, artifact)
+    return send_file(
+        path,
+        as_attachment=artifact != "html",
+        download_name=path.name,
+    )
+
+
 @app.post("/run")
 def run():
     input_kind = request.form.get("input_kind", "files")
     if input_kind not in {"files", "c", "systemverilog"}:
         return _error_page("Choose a valid assessment input type.")
+
+    if input_kind == "files":
+        initial_generators = [
+            Path(upload.filename).stem
+            for upload in request.files.getlist("input_files")
+            if upload.filename
+        ]
+    else:
+        initial_generators = [
+            request.form.get("generator_name")
+            or ("C generator" if input_kind == "c" else "SystemVerilog generator")
+        ]
+
+    started_at = time.time()
+    execution_labels = {
+        "files": "Input preparation",
+        "c": "C/C++ execution",
+        "systemverilog": "SystemVerilog execution",
+    }
+    preparation_phases = {
+        "files": "Preparing bitstreams",
+        "c": "Compiling and running C/C++",
+        "systemverilog": "Compiling and running SystemVerilog",
+    }
+    active_run = {
+        "id": uuid.uuid4().hex,
+        "input_kind": input_kind,
+        "phase": preparation_phases[input_kind],
+        "started_at": started_at,
+        "generators": initial_generators,
+        "instance_count": max(1, len(initial_generators)),
+        "stages": [
+            {
+                "key": "generator",
+                "label": execution_labels[input_kind],
+                "started_at": started_at,
+                "finished_at": None,
+            },
+            {
+                "key": "nist",
+                "label": "NIST STS",
+                "started_at": None,
+                "finished_at": None,
+            },
+        ],
+    }
+    _write_active_run(active_run)
+
+    @after_this_request
+    def clear_active_run(response):
+        _remove_active_run(active_run["id"])
+        return response
 
     try:
         stream_length, streams, cores = _parse_run_settings()
@@ -452,6 +672,18 @@ def run():
     except (GenerationError, OSError) as exc:
         return _error_page(f"Input preparation failed: {exc}")
 
+    nist_started_at = time.time()
+    active_run["stages"][0]["finished_at"] = nist_started_at
+    active_run["stages"][1]["started_at"] = nist_started_at
+    active_run.update(
+        {
+            "phase": "Running NIST STS",
+            "generators": [job[1] for job in jobs],
+            "instance_count": len(jobs),
+        }
+    )
+    _write_active_run(active_run)
+
     display_config = SimpleNamespace(
         stream_length=stream_length,
         number_of_streams=streams,
@@ -462,6 +694,9 @@ def run():
     try:
         if len(jobs) == 1:
             summary = _run_one(jobs[0])
+            active_run["stages"][1]["finished_at"] = time.time()
+            active_run["phase"] = "Exporting report"
+            _write_active_run(active_run)
             output_path = report_dir / "dashboard.html"
             export_html(summary, output_path, config=display_config)
             export_json(summary, report_dir / "report.json")
@@ -471,6 +706,9 @@ def run():
             workers = min(cores, len(jobs), CPU_COUNT)
             with multiprocessing.Pool(processes=workers) as pool:
                 summaries = pool.map(_run_one, jobs)
+            active_run["stages"][1]["finished_at"] = time.time()
+            active_run["phase"] = "Exporting comparison"
+            _write_active_run(active_run)
             output_path = report_dir / "comparison.html"
             BatchReporter(summaries, config=display_config).generate_html(output_path)
     except Exception as exc:

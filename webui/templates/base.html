@@ -7,14 +7,19 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   <main class="wrap">
-    <p class="eyebrow">NIST SP 800-22 &middot; Spur</p>
-    <h1>STS Test Runner</h1>
-    <nav class="site-nav">
-      <a href="{{ url_for('index') }}" {% if request.path == url_for('index') %}class="active"{% endif %}>Run assessment</a>
-      <a href="{{ url_for('examples') }}" {% if request.path == url_for('examples') %}class="active"{% endif %}>Examples</a>
-    </nav>
+    {% block masthead %}
+    <div class="masthead">
+      <p class="eyebrow">NIST SP 800-22 &middot; Spur</p>
+      <h1>STS Test Runner</h1>
+      <nav class="site-nav">
+        <a href="{{ url_for('index') }}" {% if request.path == url_for('index') %}class="active"{% endif %}>Run assessment</a>
+        <a href="{{ url_for('examples') }}" {% if request.path == url_for('examples') %}class="active"{% endif %}>Examples</a>
+        <a href="{{ url_for('history') }}" {% if request.path == url_for('history') %}class="active"{% endif %}>History</a>
+      </nav>
+    </div>
+    {% endblock %}
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}

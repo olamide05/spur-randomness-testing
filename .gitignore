@@ -24,6 +24,7 @@ nist_algorithm_testing/
 webui/uploads/inputs/
 webui/uploads/generated/
 webui/uploads/reports/
+webui/uploads/active/
 
 # Short input copies created by NISTRunner (tracked historical copies remain)
 sts/sts-2.1.2/input_*

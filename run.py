@@ -29,8 +29,8 @@ def _auto_calculate(file_path: Path) -> tuple:
     is_ascii = all(c in valid for c in text) and len(text) > 100
     total_bits = file_size if is_ascii else file_size * 8
     
-    stream_length = 100000
-    number_of_streams = min(total_bits // stream_length, 10)
+    stream_length = 1000000
+    number_of_streams = min(total_bits // stream_length, 100)
     
     if number_of_streams < 1:
         stream_length = max(1000, total_bits)

@@ -97,11 +97,30 @@ The assessment form supports three input modes:
 - **C generator**: edit C11 source in the browser or load a `.c` file into the
   syntax-highlighting editor. The executable receives
   `OUTPUT_PATH REQUESTED_BITS`, has the normal C library plus `libm`, and
-  writes ASCII bits or packed binary to the supplied path.
+  writes packed binary by default (ASCII remains selectable).
 - **SystemVerilog generator**: edit or load separate core and testbench `.sv`
   files with Verilog/SystemVerilog highlighting. Verilator builds the selected
-  top module. The simulation receives `+OUTPUT=<path> +BITS=<count>` and writes
-  the requested ASCII or packed stream.
+  top module. The simulation receives `+OUTPUT=<path>`, `+BITS=<count>`,
+  and `+FORMAT=binary|ascii` and writes the selected encoding.
+
+The WebUI defaults to the NIST SP 800-22 baseline of **100 streams x
+1,000,000 bits**. Packed binary is preferred, so the generated 100,000,000-bit
+input occupies exactly 12,500,000 bytes instead of roughly 100 MB of ASCII.
+
+The **Examples** tab includes ready-to-run arithmetic generators (PCG32,
+SplitMix64, Middle-Square Weyl, and xoshiro128**) and chaos-based generators
+(coupled logistic, skew-tent, and Henon maps), with both C/C++ and
+SystemVerilog implementations where appropriate. It also includes OpenSSL and
+libsodium CSPRNG examples. The normal `make install` setup installs both
+development libraries so the entire catalog appears in the WebUI.
+
+Chaos examples are intended for finite-precision research and comparison.
+They are deterministic finite-state systems and are not cryptographic
+generators merely because they pass a statistical test.
+
+Completed assessments remain available from the **History** tab, where the
+rendered dashboard can be reopened and JSON, CSV, and LaTeX artifacts can be
+downloaded.
 
 The starter source in both editors implements these contracts and can be run
 unchanged. Source and generated streams are retained under
@@ -143,7 +162,7 @@ spur-randomness-testing/
 ├── webui/
 │   ├── app.py               # Flask routes and assessment orchestration
 │   ├── templates/           # Jinja page templates
-│   └── static/              # styles, behavior, and vendored Ace editor
+│   └── static/              # styles, behavior, and vendored Monaco Editor
 │
 ├── datasets/
 │   ├── comparison/
@@ -219,7 +238,7 @@ spur-randomness-testing/
 
 - Python 3
 - Flask
-- Ace editor
+- Monaco Editor
 - GCC / C11
 - SystemVerilog / Verilator
 - NIST SP 800-22
@@ -240,7 +259,7 @@ from automation.nist_runner import NISTRunner
 config = STSConfig(
     input_file="datasets/test_cases/test_bits.txt",
     stream_length=1000000,
-    number_of_streams=10,
+    number_of_streams=100,
 )
 
 runner = NISTRunner(config)
