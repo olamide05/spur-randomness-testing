@@ -28,6 +28,7 @@ if [ "${1:-}" != "--skip-system" ]; then
         build-essential \
         curl \
         gcc \
+        libssl-dev \
         make \
         python3 \
         python3-pip \

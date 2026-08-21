@@ -87,6 +87,33 @@
   loadSource("sv_core_file", "sv_core_source");
   loadSource("sv_tb_file", "sv_tb_source");
 
+  function loadLibraryExamples() {
+    const dataEl = document.getElementById("library-examples-data");
+    if (!dataEl) return;
+    let examples = [];
+    try {
+      examples = JSON.parse(dataEl.textContent || "[]");
+    } catch (err) {
+      return;
+    }
+    const byId = new Map(examples.map((ex) => [ex.id, ex]));
+
+    const librarySelect = document.getElementById("c_library");
+    const languageSelect = document.getElementById("c_language");
+    const generatorName = document.getElementById("c_generator_name");
+    const outputFormat = document.getElementById("c_output_format");
+
+    librarySelect?.addEventListener("change", () => {
+      const example = byId.get(librarySelect.value);
+      if (!example) return;
+      setEditorValue("c_source", example.source);
+      if (languageSelect) languageSelect.value = "cpp";
+      if (generatorName) generatorName.value = example.generator_name;
+      if (outputFormat) outputFormat.value = example.output_format;
+    });
+  }
+  loadLibraryExamples();
+
   modeInputs.forEach((input) => {
     input.addEventListener("change", () => selectMode(input.value));
   });

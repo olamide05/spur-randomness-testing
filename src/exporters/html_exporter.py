@@ -105,6 +105,9 @@ def export_html(summary, output_path: Path = None, config=None) -> Path:
         name = html.escape(_display_name(t.name))
         badge_class = {"pass": "pass", "fail": "fail"}.get(t.status, "skip")
         badge_label = {"pass": "PASS", "fail": "FAIL", "skipped": "SKIP"}.get(t.status, "\u2014")
+        if t.flagged:
+            badge_label += " *"
+        title_attr = ' title="Flagged by STS as non-uniform"' if t.flagged else ""
         p_val = f"{t.p_value:.6f}" if t.p_value is not None else "\u2014"
         count = f"{t.passed}/{t.total}" if t.total else "\u2014"
 
@@ -113,7 +116,7 @@ def export_html(summary, output_path: Path = None, config=None) -> Path:
   {_bit_bar(t.passed, t.total)}
   <div class="row-count">{count}</div>
   <div class="row-p">p={p_val}</div>
-  <div class="badge {badge_class}">{badge_label}</div>
+  <div class="badge {badge_class}"{title_attr}>{badge_label}</div>
 </div>""")
 
     html_doc = f"""<!DOCTYPE html>

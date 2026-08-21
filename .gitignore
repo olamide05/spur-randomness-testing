@@ -18,6 +18,7 @@ sts/sts-2.1.2/obj/*.o
 
 .vscode/
 experiments/
+nist_algorithm_testing/
 
 # Web UI runtime artifacts (uploaded inputs, generated source, and streams)
 webui/uploads/inputs/

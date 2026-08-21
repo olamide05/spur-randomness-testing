@@ -380,6 +380,59 @@ def generate_from_c(
         )
 
 
+def generate_from_cpp(
+    source: str,
+    destination: Path,
+    requested_bits: int,
+    *,
+    output_format: str = "ascii",
+    compiler: Optional[str] = None,
+    std: str = "c++17",
+    extra_flags: Sequence[str] = (),
+) -> GeneratedBitstream:
+    """Compile a C++ program and execute it using the generator contract.
+
+    extra_flags must only ever come from server-side lookups (e.g. a
+    pkg-config result for a known library id) -- never from raw user input,
+    since they are passed straight to the compiler's argv.
+    """
+
+    _check_source(source, "C++")
+    _required_bytes(requested_bits, output_format)
+    cxx = _tool(compiler, "CXX", ("c++", "g++"))
+    destination = Path(destination).resolve()
+
+    with tempfile.TemporaryDirectory(prefix="spur_cpp_") as temp_name:
+        work_dir = Path(temp_name)
+        source_path = work_dir / "generator.cpp"
+        executable = work_dir / "generator"
+        generated_path = work_dir / "bitstream.out"
+        compile_stdout = work_dir / "compile.stdout.log"
+        compile_stderr = work_dir / "compile.stderr.log"
+        run_stdout = work_dir / "run.stdout.log"
+        run_stderr = work_dir / "run.stderr.log"
+        source_path.write_text(source, encoding="utf-8")
+
+        _run_logged(
+            [cxx, f"-std={std}", "-O2", "-Wall", "-Wextra", str(source_path),
+             "-o", str(executable), *extra_flags],
+            cwd=work_dir,
+            timeout=COMPILE_TIMEOUT_SECONDS,
+            stdout_path=compile_stdout,
+            stderr_path=compile_stderr,
+        )
+        _run_logged(
+            [str(executable), str(generated_path), str(requested_bits)],
+            cwd=work_dir,
+            timeout=RUN_TIMEOUT_SECONDS,
+            stdout_path=run_stdout,
+            stderr_path=run_stderr,
+        )
+        return _promote_output(
+            generated_path, run_stdout, destination, requested_bits, output_format
+        )
+
+
 def _verilator_major(verilator: str, work_dir: Path) -> int:
     try:
         result = subprocess.run(
@@ -432,6 +485,7 @@ def generate_from_systemverilog(
     *,
     output_format: str = "ascii",
     verilator: Optional[str] = None,
+    binary_destination: Optional[Path] = None,
 ) -> GeneratedBitstream:
     """Build and execute a SystemVerilog testbench with Verilator."""
 
@@ -508,6 +562,10 @@ def generate_from_systemverilog(
             stderr_path=run_stderr,
             env=env,
         )
+        if binary_destination is not None:
+            binary_destination = Path(binary_destination)
+            binary_destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(executable, binary_destination)
         return _promote_output(
             generated_path, run_stdout, destination, requested_bits, output_format
         )

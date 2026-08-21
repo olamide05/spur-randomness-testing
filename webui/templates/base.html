@@ -11,6 +11,10 @@
   <main class="wrap">
     <p class="eyebrow">NIST SP 800-22 &middot; Spur</p>
     <h1>STS Test Runner</h1>
+    <nav class="site-nav">
+      <a href="{{ url_for('index') }}" {% if request.path == url_for('index') %}class="active"{% endif %}>Run assessment</a>
+      <a href="{{ url_for('examples') }}" {% if request.path == url_for('examples') %}class="active"{% endif %}>Examples</a>
+    </nav>
     {% block content %}{% endblock %}
   </main>
   {% block scripts %}{% endblock %}

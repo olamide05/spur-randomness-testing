@@ -11,6 +11,7 @@ Setup and run:
 
 from __future__ import annotations
 
+import json
 import multiprocessing
 import os
 import shutil
@@ -37,7 +38,15 @@ from src.generators.source_runner import (  # noqa: E402
     SV_TB_TEMPLATE,
     GenerationError,
     generate_from_c,
+    generate_from_cpp,
     generate_from_systemverilog,
+)
+from src.generators.examples import (  # noqa: E402
+    available_library_examples,
+    extra_compile_flags,
+    library_example_by_id,
+    sv_example_by_id,
+    SV_EXAMPLES,
 )
 
 STS_PATH = REPO_ROOT / "sts" / "sts-2.1.2"
@@ -81,6 +90,7 @@ def _run_one(args):
         number_of_streams,
         tests_cfg,
         input_mode,
+        archive_meta,
     ) = args
     sys.path.insert(0, str(REPO_ROOT))
     os.chdir(REPO_ROOT)
@@ -88,6 +98,7 @@ def _run_one(args):
     from src.automation.nist_runner import NISTRunner as _NISTRunner
     from src.config.sts_config import STSConfig as _STSConfig
     from src.config.sts_config import TestConfig as _TestConfig
+    from src.core.archive_writer import archive_run as _archive_run
     from src.parser.result_parser import ResultParser as _ResultParser
 
     tests = {
@@ -124,7 +135,27 @@ def _run_one(args):
             tests=tests,
         )
         experiment_dir = _NISTRunner(config).run()
-        return _ResultParser(experiment_dir, generator=generator).parse()
+        summary = _ResultParser(
+            experiment_dir, generator=generator, number_of_streams=number_of_streams
+        ).parse()
+
+        run_config = SimpleNamespace(
+            stream_length=stream_length,
+            number_of_streams=number_of_streams,
+            tests=tests_cfg,
+        )
+        meta = dict(archive_meta)
+        kind = meta.pop("kind")
+        _archive_run(
+            kind,
+            generator=generator,
+            experiment_dir=experiment_dir,
+            summary=summary,
+            run_config=run_config,
+            bitstream_path=Path(file_path),
+            **meta,
+        )
+        return summary
 
 
 def _safe_generator_name(value: str, fallback: str) -> str:
@@ -161,6 +192,20 @@ def _source_text(
     return editor_source
 
 
+def _library_examples_json() -> str:
+    payload = [
+        {
+            "id": ex.id,
+            "title": ex.title,
+            "generator_name": ex.generator_name,
+            "output_format": ex.output_format,
+            "source": ex.source,
+        }
+        for ex in available_library_examples()
+    ]
+    return json.dumps(payload).replace("</", "<\\/")
+
+
 def _template_context() -> dict:
     return {
         "c_template": C_TEMPLATE,
@@ -170,7 +215,38 @@ def _template_context() -> dict:
         "param_defaults": PARAM_DEFAULTS,
         "cpu_count": CPU_COUNT,
         "default_cores": max(1, CPU_COUNT - 1),
+        "library_examples": available_library_examples(),
+        "library_examples_json": _library_examples_json(),
+        "sv_examples": SV_EXAMPLES,
     }
+
+
+def _example_prefill(example_id: str) -> dict:
+    """Fields to override in the main form's context when `?example=<id>` is
+    given -- looked up server-side, never trusting the id beyond a lookup."""
+    if not example_id:
+        return {}
+
+    library = library_example_by_id(example_id)
+    if library is not None:
+        return {
+            "selected_mode": "c",
+            "c_template": library.source,
+            "selected_language": "cpp",
+            "selected_library": library.id,
+            "selected_generator_name": library.generator_name,
+            "selected_output_format": library.output_format,
+        }
+
+    sv_example = sv_example_by_id(example_id)
+    if sv_example is not None:
+        return {
+            "selected_mode": "systemverilog",
+            "sv_core_template": sv_example.core_source,
+            "selected_generator_name": sv_example.generator_name,
+        }
+
+    return {}
 
 
 def _error_page(message: str) -> Response:
@@ -241,6 +317,7 @@ def _file_jobs(stream_length: int, streams: int, tests: dict) -> list:
                 streams,
                 tests,
                 None,
+                {"kind": "upload", "original_filename": Path(upload.filename).name},
             )
         )
     return jobs
@@ -252,16 +329,41 @@ def _c_job(stream_length: int, streams: int, tests: dict) -> tuple:
         request.form.get("generator_name", ""), "c_generator"
     )
     output_format = request.form.get("output_format", "ascii")
+    language = request.form.get("language", "c")
+    library_id = request.form.get("library", "none")
+
+    library = None
+    if library_id != "none":
+        library = library_example_by_id(library_id)
+        if library is None:
+            raise GenerationError(f"Library '{library_id}' is not available on this host.")
+        language = "cpp"
+
     artifact_dir = GENERATED_DIR / uuid.uuid4().hex
     artifact_dir.mkdir(parents=True)
-    (artifact_dir / "generator.c").write_text(source, encoding="utf-8")
     extension = ".txt" if output_format == "ascii" else ".bin"
-    generated = generate_from_c(
-        source,
-        artifact_dir / f"bitstream{extension}",
-        stream_length * streams,
-        output_format=output_format,
-    )
+
+    if language == "cpp":
+        source_path = artifact_dir / "generator.cpp"
+        source_path.write_text(source, encoding="utf-8")
+        extra_flags = extra_compile_flags(library) if library else ()
+        generated = generate_from_cpp(
+            source,
+            artifact_dir / f"bitstream{extension}",
+            stream_length * streams,
+            output_format=output_format,
+            extra_flags=extra_flags,
+        )
+    else:
+        source_path = artifact_dir / "generator.c"
+        source_path.write_text(source, encoding="utf-8")
+        generated = generate_from_c(
+            source,
+            artifact_dir / f"bitstream{extension}",
+            stream_length * streams,
+            output_format=output_format,
+        )
+
     return (
         str(generated.path),
         generator,
@@ -269,6 +371,7 @@ def _c_job(stream_length: int, streams: int, tests: dict) -> tuple:
         streams,
         tests,
         generated.input_mode,
+        {"kind": "c", "c_source_path": source_path},
     )
 
 
@@ -294,6 +397,7 @@ def _systemverilog_job(stream_length: int, streams: int, tests: dict) -> tuple:
         testbench_source, encoding="utf-8"
     )
     extension = ".txt" if output_format == "ascii" else ".bin"
+    binary_path = artifact_dir / "testbench_binary"
     generated = generate_from_systemverilog(
         core_source,
         testbench_source,
@@ -301,6 +405,7 @@ def _systemverilog_job(stream_length: int, streams: int, tests: dict) -> tuple:
         artifact_dir / f"bitstream{extension}",
         stream_length * streams,
         output_format=output_format,
+        binary_destination=binary_path,
     )
     return (
         str(generated.path),
@@ -309,12 +414,24 @@ def _systemverilog_job(stream_length: int, streams: int, tests: dict) -> tuple:
         streams,
         tests,
         generated.input_mode,
+        {
+            "kind": "sv",
+            "sv_core_path": artifact_dir / "core.sv",
+            "sv_binary_path": binary_path,
+        },
     )
 
 
 @app.get("/")
 def index():
-    return render_template("index.html", **_template_context())
+    context = _template_context()
+    context.update(_example_prefill(request.args.get("example", "")))
+    return render_template("index.html", **context)
+
+
+@app.get("/examples")
+def examples():
+    return render_template("examples.html", **_template_context())
 
 
 @app.post("/run")

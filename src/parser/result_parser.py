@@ -12,6 +12,7 @@ class TestResult:
     p_value: Optional[float] = None
     proportion: Optional[float] = None
     status: str = "unknown"
+    flagged: bool = False
 
 
 @dataclass
@@ -41,22 +42,64 @@ class ResultParser:
         "linear_complexity": "LinearComplexity",
     }
 
-    def __init__(self, experiment_directory: Path, generator: str = ""):
+    def __init__(
+        self,
+        experiment_directory: Path,
+        generator: str = "",
+        number_of_streams: int = 1,
+    ):
         self.experiment_directory = Path(experiment_directory)
         self.generator = generator
+        self.number_of_streams = number_of_streams
 
     def parse(self) -> ExperimentSummary:
-        report = self.experiment_directory / "finalAnalysisReport.txt"
-        if not report.exists():
-            raise FileNotFoundError(f"Report not found: {report}")
-
         summary = ExperimentSummary(
             generator=self.generator,
             experiment_directory=self.experiment_directory,
             tests=[]
         )
 
-        report_data: Dict[str, dict] = {}
+        if self.number_of_streams == 1:
+            summary.tests = self._parse_single_stream()
+        else:
+            summary.tests = self._parse_report()
+
+        evaluated = [t for t in summary.tests if t.total > 0]
+        if evaluated:
+            passed_count = sum(1 for t in evaluated if t.status == "pass")
+            summary.overall_status = "pass" if passed_count == len(evaluated) else "fail"
+
+        return summary
+
+    def _parse_single_stream(self) -> List[TestResult]:
+        """A single sequence makes STS's own proportion table meaningless
+        (it would just be a trivial 0/1 or 1/1), so pass/fail is instead the
+        raw p-value from each test's own result folder, read directly."""
+        tests = []
+        for name, dir_name in self.DETAIL_DIR_NAMES.items():
+            p_values = self._read_raw_p_values(dir_name)
+            if not p_values:
+                tests.append(TestResult(name=name, passed=0, total=0, status="skipped"))
+                continue
+
+            worst_p = min(p_values)
+            passed = worst_p > 0.01
+            tests.append(TestResult(
+                name=name,
+                passed=1 if passed else 0,
+                total=1,
+                p_value=worst_p,
+                proportion=1.0 if passed else 0.0,
+                status="pass" if passed else "fail",
+            ))
+        return tests
+
+    def _parse_report(self) -> List[TestResult]:
+        report = self.experiment_directory / "finalAnalysisReport.txt"
+        if not report.exists():
+            raise FileNotFoundError(f"Report not found: {report}")
+
+        report_data: Dict[str, list] = {}
         in_results = False
 
         with open(report) as f:
@@ -71,45 +114,35 @@ class ResultParser:
                 if not parsed:
                     continue
 
-                name, p_val, passed, total = parsed
+                name, p_val, passed, total, flagged = parsed
+                report_data.setdefault(name, []).append(
+                    {"p_value": p_val, "passed": passed, "total": total, "flagged": flagged}
+                )
 
-                if name not in report_data:
-                    report_data[name] = {"p_values": [], "passed": 0, "total": 0}
-
-                report_data[name]["p_values"].append(p_val)
-                report_data[name]["passed"] += passed
-                report_data[name]["total"] += total
-
-        for name, data in report_data.items():
-            test = TestResult(name=name, passed=0, total=0, status="unknown")
-
-            detail_passed, detail_total = self._read_detail_file(name)
-            if detail_total > 0:
-                test.passed = detail_passed
-                test.total = detail_total
+        tests = []
+        for name, rows in report_data.items():
+            flagged_rows = [r for r in rows if r["flagged"]]
+            if flagged_rows:
+                worst = flagged_rows[0]
             else:
-                test.passed = data["passed"]
-                test.total = data["total"]
+                worst = min(rows, key=lambda r: (r["passed"] / r["total"]) if r["total"] else 0)
+
+            test = TestResult(name=name, passed=worst["passed"], total=worst["total"])
+            test.flagged = bool(flagged_rows)
+            test.p_value = worst["p_value"]
 
             if test.total > 0:
                 test.proportion = test.passed / test.total
-                low, high = self._acceptable_range(test.total)
-                test.status = "pass" if low <= test.passed <= high else "fail"
+                if test.flagged:
+                    test.status = "fail"
+                else:
+                    low, high = self._acceptable_range(test.total)
+                    test.status = "pass" if low <= test.passed <= high else "fail"
             else:
                 test.status = "skipped"
 
-            p_vals = [p for p in data["p_values"] if p is not None]
-            if p_vals:
-                test.p_value = p_vals[0]
-
-            summary.tests.append(test)
-
-        evaluated = [t for t in summary.tests if t.total > 0]
-        if evaluated:
-            passed_count = sum(1 for t in evaluated if t.status == "pass")
-            summary.overall_status = "pass" if passed_count == len(evaluated) else "fail"
-
-        return summary
+            tests.append(test)
+        return tests
 
     @staticmethod
     def _acceptable_range(sample_size: int) -> tuple:
@@ -121,7 +154,9 @@ class ResultParser:
         return (p_hat - delta) * sample_size, (p_hat + delta) * sample_size
 
     def _parse_report_line(self, line: str) -> Optional[tuple]:
-        parts = [p for p in line.strip().split() if p != "*"]
+        raw_parts = line.strip().split()
+        flagged = "*" in raw_parts
+        parts = [p for p in raw_parts if p != "*"]
         if len(parts) < 3:
             return None
 
@@ -147,7 +182,7 @@ class ResultParser:
             except ValueError:
                 return None
 
-        return name, p_val, passed, total
+        return name, p_val, passed, total, flagged
 
     def _normalize_name(self, raw: str) -> str:
         mapping = {
@@ -169,31 +204,22 @@ class ResultParser:
         }
         return mapping.get(raw, raw)
 
-    def _read_detail_file(self, name: str) -> tuple:
-        dir_name = self.DETAIL_DIR_NAMES.get(name)
-        if dir_name is None:
-            return 0, 0
+    def _read_raw_p_values(self, dir_name: str) -> List[float]:
+        """Read the p-values STS wrote for one test, straight from its own
+        results.txt (format: 'index\\tp_value' per line, one line per
+        sub-variant when a test has them, e.g. per template)."""
+        results_file = self.experiment_directory / dir_name / "results.txt"
+        if not results_file.exists():
+            return []
 
-        test_dir = self.experiment_directory / dir_name
-        if not test_dir.exists():
-            return 0, 0
-
-        results = list(test_dir.glob("results*.txt"))
-        if not results:
-            return 0, 0
-
-        passed = 0
-        total = 0
-        for r in results:
-            try:
-                with open(r) as f:
-                    for line in f:
-                        if "SUCCESS" in line:
-                            passed += 1
-                            total += 1
-                        elif "FAILURE" in line:
-                            total += 1
-            except Exception:
-                continue
-
-        return passed, total
+        p_values = []
+        with open(results_file) as f:
+            for line in f:
+                parts = line.split()
+                if not parts:
+                    continue
+                try:
+                    p_values.append(float(parts[-1]))
+                except ValueError:
+                    continue
+        return p_values

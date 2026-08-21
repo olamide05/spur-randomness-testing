@@ -10,10 +10,13 @@ from datetime import datetime
 import sys
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+from types import SimpleNamespace
+
 from src.config.sts_config import STSConfig, TestConfig
 from src.automation.nist_runner import NISTRunner
 from src.parser.result_parser import ResultParser, ExperimentSummary, TestResult
 from src.exporters import export_json, export_csv, export_latex, export_html
+from src.core.archive_writer import archive_run
 from src.core.batch_reporter import BatchReporter
 
 
@@ -90,6 +93,7 @@ def _run_worker(config_dict: dict) -> dict:
     """Run one test in an isolated temp directory for true parallelism."""
     original_sts_path = Path(config_dict["sts_path"]).resolve()
     input_file = Path(config_dict["input_file"]).resolve()
+    original_input_name = input_file.name
     project_root = Path(config_dict["project_root"]).resolve()
     
     os.chdir(project_root)
@@ -129,14 +133,28 @@ def _run_worker(config_dict: dict) -> dict:
         runner = NISTRunner(config)
         exp_dir = runner.run()
         
-        parser = ResultParser(exp_dir, generator=config.generator)
+        parser = ResultParser(exp_dir, generator=config.generator, number_of_streams=config.number_of_streams)
         summary = parser.parse()
         
         export_json(summary)
         export_csv(summary)
         export_latex(summary)
         export_html(summary)
-        
+
+        archive_run(
+            "upload",
+            generator=config.generator,
+            experiment_dir=exp_dir,
+            summary=summary,
+            run_config=SimpleNamespace(
+                stream_length=config.stream_length,
+                number_of_streams=config.number_of_streams,
+                tests=config_dict["tests"],
+            ),
+            bitstream_path=input_file,
+            original_filename=original_input_name,
+        )
+
         return {
             "generator": summary.generator,
             "overall_status": summary.overall_status,
